@@ -1,1 +1,12 @@
 1.0.6
+- Bugfix: CodeMirror Textareas not updating for "Save and Continue" and AutoSave
+- Bugfix: Validation could fail, and was not done for delete/enable/disable
+- Fixed: vQMod Upgraded message detection (was detected as error)
+- Fixed: vQModerator wasn't logging in the same files as vQMod
+- Fixed: Separated vQMod/vQModerator update
+- Added: Future vQModerator updates also from Repository!
+- Added: View vQModerator Changelog before update!
+- Added: Daily vQMod(erator) version check (see if update is available)
+- Added: Delete Log File(s)
+- Added: Download Log File(s)
+- Added: While editing an XML file, pressing [Ctrl + S] saves the xml

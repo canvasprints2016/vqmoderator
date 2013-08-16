@@ -128,7 +128,21 @@
     <?php } ?>
 </div>
 <div id="vqdialog" style="display:none;"></div>
+<div id="vqtooltip" style="display:none;position:absolute;"><?php echo $changelog;?></div>
 <script type="text/javascript">
+<?php if ($changelog) { ?>
+var mouseX;
+var mouseY;
+$(document).mousemove( function(e) {
+	mouseX = e.pageX;
+	mouseY = e.pageY;
+});
+$('.vqtooltip').mouseenter(function() {
+	$('#vqtooltip').css({'top':mouseY,'left':mouseX}).fadeIn('slow');
+}).mouseleave(function() {
+	$('#vqtooltip').fadeOut('slow');
+});
+<?php } ?>
 $(document).ready(function() {
 	$('.uninstall').click(function() {
 		var url = $(this).attr('href'),
@@ -212,6 +226,7 @@ $(document).ready(function() {
 	});
 
 	$('.vqmod-config').click(function() {
+		var highlight = ($(this).hasClass('vqm-update')) ? 'vqm' : ($(this).hasClass('vqmr-update') ? 'vqmr' : false);
 		$('.warning, .success').fadeOut(300, function() { $('.warning, .success').remove(); });
 		$('#vqmod-config').dialog({
 			title: '<?php echo $text_vqmod_config;?>',
@@ -289,6 +304,9 @@ $(document).ready(function() {
 			open: function() {
 				$('#button-set-vqmod').button('disable');
 				$('.update-vqmod').button();
+				if (highlight) $('.update-vqmod').addClass('ui-state-highlight');
+				if (highlight == 'vqm') $('.update-vqmod:not("#update-vqmod")').removeClass('ui-state-highlight');
+				else if (highlight == 'vqmr') $('#update-vqmod').removeClass('ui-state-highlight');
 			}
 		});
 	});

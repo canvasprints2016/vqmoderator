@@ -1,4 +1,16 @@
-fieldset{
+#vqtooltip {
+  border:2px solid #509300;
+  -webkit-border-radius:7px 7px 7px 7px;
+  -moz-border-radius:7px 7px 7px 7px;
+  -khtml-border-radius:7px 7px 7px 7px;
+  border-radius:7px 7px 7px 7px;
+  -webkit-box-shadow:7px 7px 7px #BBB;
+  -moz-box-shadow:7px 7px 7px #BBB;
+  box-shadow:7px 7px 7px #BBB;
+  background-color:#DAFFAF;
+  padding:10px;
+}
+fieldset {
   position:relative;
   border-color:#004799;
   -webkit-border-radius:7px 7px 7px 7px;

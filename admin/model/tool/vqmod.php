@@ -535,17 +535,18 @@ class ModelToolVqmod extends Model {
 					if (filemtime($cache) > strtotime('-24 Hours')) {
 						$versions = file_get_contents($cache);
 						$versions = explode(';', $versions);
-						if (isset($versions[1])) {
-							$versions[0] = (int)$versions[0];
-							$versions[1] = (int)$versions[1];
-						} else {
+						$version = array_shift($versions);
+						if (!$version || !$versions) {
 							unset($versions);
+						} else {
+							$versions = implode(';', $versions); // implode in case Changelog contains ";"
+							$versions = array($version, $versions);
 						}
 					}
 				} else {
 					$cache = false;
 				}
-				// Search the vqmod version in repository
+				// Get the vqmod version from repository
 				if (!isset($versions)) {
 					$versions = array();
 					$file = $data['vqm_trunk'] . 'vqmod/vqmod.php';
@@ -557,16 +558,20 @@ class ModelToolVqmod extends Model {
 					}
 					if ($version) {
 						$versions[0] = $version;
+						// Get vQModerator version from repository
 						$file = 'http://vqmoderator.googlecode.com/svn/trunk/version';
 						if ($this->isRemoteFile($file)) {
-							$version = file_get_contents('http://vqmoderator.googlecode.com/svn/trunk/version');
-							$versions[1] = $version;
+							$changelog = file_get_contents($file);
+							$changelog = explode("\n", $changelog);
+							$version = array_shift($changelog); // Version is first line (rest is changelog)
+							$changelog = implode("\n<br />", $changelog);
+							$versions[1] = $version . "\n" . $changelog;
 						}
 					}
+					if ($cache && isset($versions[1])) file_put_contents($cache, implode(';', $versions));
 				}
-				if ($cache && isset($versions[1])) file_put_contents($cache, implode(';', $versions));
 				if (!isset($versions[0])) $versions[0] = 0;
-				if (!isset($versions[1])) $versions[1] = 0;
+				if (!isset($versions[1])) $versions[1] = '0:';
 				$sorted['versions'] = $versions;
 			}
 			return $sorted;
