@@ -18,7 +18,9 @@ class ControllerToolVqmod extends Controller {
 		$settings_check = $this->model_tool_vqmod->settings('check');
 		$vqm_version = $settings_check['versions'][0];
 		$vqm_ver = (int)str_replace('.', '', $vqm_version);
-		$vqmr_version = $settings_check['versions'][1];
+		$changelog = explode("\n", $settings_check['versions'][1]);
+		$vqmr_version = array_shift($changelog);
+		$this->data['changelog'] = implode('', $changelog);
 		$vqmr_ver = (int)str_replace('.', '', $vqmr_version);
 		unset($settings_check['versions']);
 		if (!defined('VQMODVER') || $this->config->get('vqm_trunk') === null) { // Check for newest setting
@@ -119,14 +121,14 @@ class ControllerToolVqmod extends Controller {
 
 		$this->data['heading_title'] = $this->language->get('heading_title');
 		if ($vqmr_ver > str_replace('.', '', $this->model_tool_vqmod->version)) {
-			$this->data['heading_title'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-config">(' . $this->language->get('text_update_found') . $vqmr_version . ')</small>';
+			$this->data['heading_title'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-config vqmr-update vqtooltip">(' . $this->language->get('text_update_found') . $vqmr_version . ')</small>';
 		}
 		
 		$this->data['column_name'] = $this->language->get('column_name');
 		$this->data['column_version'] = $this->language->get('column_version');
 		$this->data['column_vqmver'] = $this->language->get('column_vqmver') . ' <small style="margin-left:8px;">(' . VQMODVER . ')</small>';
 		if ($vqm_ver > (int)str_replace('.', '', VQMODVER)) {
-			$this->data['column_vqmver'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-config">(' . $this->language->get('text_update_found') . $vqm_version . ')</small>';
+			$this->data['column_vqmver'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-config vqm-update">(' . $this->language->get('text_update_found') . $vqm_version . ')</small>';
 		}
 		$this->data['column_author'] = $this->language->get('column_author');
 		$this->data['column_action'] = $this->language->get('column_action');
@@ -765,7 +767,7 @@ class ControllerToolVqmod extends Controller {
 				$remote = $trunk . $remote;
 				if ($this->model_tool_vqmod->isRemoteFile($remote)) {
 					$data = file_get_contents($remote);
-					// Search the newly installed vqmod version
+					// Get the newly installed vqmod version
 					if ($local == 'vqmod/vqmod.php') $version = $this->getVersion($data);
 					if ($success) $success = $this->model_tool_vqmod->createFile('../' . $local, $data, 'text', 0755);
 				} else {
@@ -790,8 +792,13 @@ class ControllerToolVqmod extends Controller {
 				$this->model_tool_vqmod->deleteFile('../vqmod/xml/vQModerator.xml');
 				$re = 'Re-';
 			}
+			// Get repository vQModerator version
 			$modver = 'http://vqmoderator.googlecode.com/svn/trunk/version';
 			$modver = ($this->model_tool_vqmod->isRemoteFile($modver)) ? file_get_contents($modver) : 0;
+			if ($modver) {
+				$modver = explode("\n", $modver);
+				$modver = $modver[0]; // Version is first line (rest is changelog)
+			}
 			if ((int)str_replace('.', '', $modver) > (int)str_replace('.', '', $this->version)) {
 				// Update vQModerator from Repository
 				$files = 'http://vqmoderator.googlecode.com/svn/trunk/files';
