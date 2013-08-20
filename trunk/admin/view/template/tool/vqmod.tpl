@@ -15,9 +15,15 @@
     <div class="heading">
       <h1><img src="view/image/setting.png" alt="" /> <?php echo $heading_title; ?></h1>
       <div class="buttons">
-		  <?php if ($install_all) { ?><a class="button" href="<?php echo $install_all;?>"><?php echo $button_install_all; ?></a><?php } ?>
-		  <?php if ($uninstall_all) { ?><a class="button" href="<?php echo $uninstall_all;?>"><?php echo $button_uninstall_all; ?></a><?php } ?>
-		   &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a class="button vqmod-config"><?php echo $button_config; ?></a> <a class="button vqmod-log"><?php echo $button_log; ?></a> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a class="button vqmod-upload"><?php echo $button_upload; ?></a></div>
+        <?php echo $text_sort;?> <select id="xml-sorter">
+          <option value="file.asc"<?php if (!$xml_sorter || $xml_sorter == 'file.asc') echo ' selected="selected"';?>><?php echo $text_name_asc;?></option>
+          <option value="file.desc"<?php if ($xml_sorter == 'file.desc') echo ' selected="selected"';?>><?php echo $text_name_desc;?></option>
+          <option value="type.desc"<?php if ($xml_sorter == 'type.desc') echo ' selected="selected"';?>><?php echo $text_type_desc;?></option>
+          <option value="type.asc"<?php if ($xml_sorter == 'type.asc') echo ' selected="selected"';?>><?php echo $text_type_asc;?></option>
+        </select> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+        <?php if ($install_all) { ?><a class="button" href="<?php echo $install_all;?>"><?php echo $button_install_all; ?></a><?php } ?>
+        <?php if ($uninstall_all) { ?><a class="button" href="<?php echo $uninstall_all;?>"><?php echo $button_uninstall_all; ?></a><?php } ?>
+        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a class="button vqmod-config"><?php echo $button_config; ?></a> <a class="button vqmod-log"><?php echo $button_log; ?></a> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a class="button vqmod-upload"><?php echo $button_upload; ?></a></div>
     </div>
     <div class="content">
       <table class="list">
@@ -34,7 +40,7 @@
         <tbody>
         <?php if ($vqmods) { ?>
           <?php foreach ($vqmods as $vqmod) { ?>
-          <tr>
+          <tr class="xml-type-<?php echo $vqmod['type'];?>">
 			<td class="left"><?php echo $vqmod['install']; ?></td>
 			<td class="left">
 				<b><?php echo $vqmod['title'];?></b><br/>
@@ -55,6 +61,11 @@
         <?php } ?>
         </tbody>
       </table>
+      <div id="xml-filter" style="display:inline-block;float:left;">
+        <input type="checkbox" value="enabled" id="xml-enabled" name="xml_filter[]"<?php if (!$xml_filter || strpos($xml_filter, 'e') !== false) echo ' checked="checked"';?>><label for="xml-enabled"><img title="Installed" alt="Installed" src="view/image/success.png" /></label>
+        <input type="checkbox" value="disabled" id="xml-disabled" name="xml_filter[]"<?php if (strpos($xml_filter, 'd') !== false) echo ' checked="checked"';?>><label for="xml-disabled"><img title="Uninstalled" alt="Uninstalled" src="view/image/attention.png" /></label>
+        <input type="checkbox" value="backup" id="xml-backups" name="xml_filter[]"<?php if (strpos($xml_filter, 'b') !== false) echo ' checked="checked"';?>><label for="xml-backups"><img title="Backup File" alt="Backup File" src="view/image/product.png" style="width:16px;height:16px;" /></label>
+      </div>
       <a href="<?php echo $vqmod_new_file;?>" style="float:right;"><?php echo $text_xml_new;?></a>
     </div>
   </div>
@@ -109,7 +120,7 @@
       <?php } else { ?>
         <td class="left"><?php echo $this->language->get('entry_' . $vqname); ?></td>
         <td class="left">
-          <?php if ($vqname == 'vqm_xml' || $vqname == 'vqm_cache' || $vqname == 'log_file') { ?>
+          <?php if ($vqname == 'vqm_xml' || $vqname == 'vqm_cache' || $vqname == 'vqm_backup' || $vqname == 'log_file') { ?>
           <input class="vqm" type="text" style="width:120px;" disabled="disabled" readonly="readonly" value="<?php echo $vqconfig['vqm'];?>" />
           <input name="<?php echo $vqname;?>" type="text" class="vqdir" style="width:260px;" value="<?php echo $vqval;?>" data-orig="<?php echo $vqval;?>" />
           <?php } else { ?>
@@ -144,6 +155,23 @@ $('.vqtooltip').mouseenter(function() {
 });
 <?php } ?>
 $(document).ready(function() {
+	$('#xml-filter').buttonset();
+	$('input[name="xml_filter[]"]').change(function() {
+		var these = $(this).val();
+		if (!$(this).is(':checked')) $('.xml-type-' + these).hide();
+		else $('.xml-type-' + these).fadeIn();
+		$.ajax({
+			url: '<?php echo $vqmod_setfilter;?>',
+			data: $('input[name="xml_filter[]"]:checked'),
+			type: 'POST'
+		});
+	});
+	$('input[name="xml_filter[]"]').change();
+	$('#xml-sorter').change(function() {
+		var args = $(this).val().split('.');
+		window.location.href = '<?php echo $vqmod_page; ?>&sort=' + args[0] + '&order=' + args[1];
+	});
+
 	$('.uninstall').click(function() {
 		var url = $(this).attr('href'),
 			delfiles = $(this).data('files').split('|'),
@@ -210,10 +238,11 @@ $(document).ready(function() {
 		}
 	});
 	$('.vqmod-install').click(function() {
-		var xist = ($(this).is('#install-xisting')) ? '&vqmod=xist' : '';
-		$('.warning, .success').fadeOut(300)
+		var xist = ($(this).is('#install-xisting')) ? 'xist' : '1';
+		$(this).after('<img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" />');
+		$('.success').fadeOut(300);
 		$.ajax({
-			url : '<?php echo $vqmod_install;?>' + xist,
+			url : '<?php echo $vqmod_install;?>&vqmod=' + xist,
 			dataType: 'html',
 			success: function(data) {
 				if (data.indexOf('INSTALLED') === -1 && data.indexOf('UPGRADE') === -1) {
