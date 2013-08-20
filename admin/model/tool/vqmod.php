@@ -1,22 +1,34 @@
 <?php
 class ModelToolVqmod extends Model {
-	public $version = '1.0.6';
+	public $version = '1.0.7';
 
 	public function getFiles() {
 		$files = array();
 		$error = $message = array();
 		$use_errors = libxml_use_internal_errors(true); // Save error setting
 		$dirfiles = glob($this->config->get('vqm_xml') . '*.xml*');
+		$bakfiles = glob($this->config->get('vqm_backup') . '*.xml*');
+		$dirfiles = array_merge($dirfiles, $bakfiles);
 		foreach ($dirfiles as $path) {
 			$status = true;
 			$action = array();
-			$file = $filename = str_replace($this->config->get('vqm_xml'), '', $path);
+			$file = $filename = str_replace($this->config->get('vqm_xml'), '', str_replace($this->config->get('vqm_backup'), '', $path));
 			if ($file != 'vqmod_opencart.xml') {
 				$newfiles = '';
 				$xml = simplexml_load_file($path);
 				// XML Error handling
 				if (!$xml) {
-					$error[] = sprintf($this->language->get('text_xml_not_valid'), rtrim($filename, '_'));
+					$error[] = $errmsg = sprintf($this->language->get('text_xml_not_valid'), rtrim($filename, '_'));
+					$this->log(array(array(
+						'info' => array(
+							'modFile' => $file,
+							'id' => (isset($xml->id) ? $xml->id : $file),
+							'version' => (isset($xml->version) ? $xml->version : ''),
+							'vqmver' => (isset($xml->vqmver) ? $xml->vqmver : ''),
+							'author' => (isset($xml->author) ? $xml->author : '')
+						),
+						'log' => $errmsg
+					)));
 					if (substr($file, -4) == '.xml') {
 						$disabled = $this->disableFile($path, false, false); // returns false, or array with messages
 						if ($disabled) {
@@ -31,7 +43,17 @@ class ModelToolVqmod extends Model {
 					foreach ($xml->newfile as $newfile) {
 						if (!file_exists('../' . $newfile['name'])) {
 							if (substr($file, -4) == '.xml' && $newfile['exist'] != 'delete') {
-								$error[] = sprintf($this->language->get('text_xml_not_complete'), (isset($xml->id) ? $xml->id : $filename));
+								$error[] = $errmsg = sprintf($this->language->get('text_xml_not_complete'), (isset($xml->id) ? $xml->id : $filename));
+								$this->log(array(array(
+									'info' => array(
+										'modFile' => $file,
+										'id' => (isset($xml->id) ? $xml->id : $file),
+										'version' => (isset($xml->version) ? $xml->version : ''),
+										'vqmver' => (isset($xml->vqmver) ? $xml->vqmver : ''),
+										'author' => (isset($xml->author) ? $xml->author : '')
+									),
+									'log' => $errmsg
+								)));
 								$disabled = $this->disableFile($path, false, false); // returns false, or array with messages
 								if ($disabled) {
 									if (is_array($disabled)) $message = array_merge($message, $disabled);
@@ -48,6 +70,17 @@ class ModelToolVqmod extends Model {
 
 				$backup = $install = '';
 				if (substr($file, -4) == '.bak') {
+					if ($this->config->get('vqm_backup') && dirname($path) . '/' != $this->config->get('vqm_backup')) {
+						if (!file_exists($this->config->get('vqm_backup'))) $this->createFile($this->config->get('vqm_backup') . 'temp.tmp');
+						$this->deleteFile($this->config->get('vqm_backup') . 'temp.tmp');
+						$moved = $this->renameFile($path, $this->config->get('vqm_backup') . $file);
+						if ($moved) {
+							$message[] = sprintf($this->language->get('text_moved_backup'), $file);
+							$path = $this->config->get('vqm_backup') . $file;
+						} else {
+							$error[] = sprintf($this->language->get('error_moving_backup'), $file);
+						}
+					}
 					$status = null;
 					$backup = $this->language->get('text_backup_file');
 					$install = '';
@@ -100,6 +133,7 @@ class ModelToolVqmod extends Model {
 				$required = (isset($xml->vqmver['required']) && $xml->vqmver['required']) ? ' <' . ($required ? 'b' : 'small') . ' style="margin-left:8px;' . $required . '">(' . $this->language->get('text_required') . ')</' . ($required ? 'b' : 'small') . '>' : '';
 				$file = array(
 					'file' => $filename,
+					'type' => ($install ? ((substr($file, -1) == '_') ? 'dis' : 'en') . 'abled' : 'backup'),
 					'install' => $install,
 					'size' => $this->getSize($filesize),
 					'date' => date("M jS Y H:i", filemtime($path)),
@@ -114,7 +148,20 @@ class ModelToolVqmod extends Model {
 			}
 		}
 		libxml_use_internal_errors($use_errors); // Reset error setting
-		$files = $this->multiSort($files);
+		$sort = 'name';
+		$order = 'asc';
+		if (isset($this->request->get['sort'])) {
+			$sort = $this->request->get['sort'];
+			$this->session->data['vqmod']['sort'] = $sort;
+			if (isset($this->request->get['order'])) {
+				$order = $this->request->get['order'];
+				$this->session->data['vqmod']['order'] = $order;
+			}
+		} elseif (isset($this->session->data['vqmod']['sort'])) {
+			$sort = $this->session->data['vqmod']['sort'];
+			if (isset($this->session->data['vqmod']['order'])) $order = $this->session->data['vqmod']['order'];
+		}
+		$files = $this->multiSort($files, $sort, $order);
 
 		if ($error) {
 			$this->log(array(array(
@@ -140,8 +187,9 @@ class ModelToolVqmod extends Model {
 			'author' => ''
 		);
 		$use_errors = libxml_use_internal_errors(true); // Save error setting
-		if ($file && file_exists($this->config->get('vqm_xml') . $file)) {
-			$xmll = simplexml_load_file($this->config->get('vqm_xml') . $file);
+		$xml_file = ($file && file_exists($this->config->get('vqm_xml') . $file)) ? $this->config->get('vqm_xml') . $file : $this->config->get('vqm_backup') . $file;
+		if ($file && file_exists($xml_file)) {
+			$xmll = simplexml_load_file($xml_file);
 			// XML Error handling
 			if (!$xmll) $xml->error = sprintf($this->language->get('text_xml_not_valid'), rtrim($file, '_'));
 			else $xml = $xmll;
@@ -453,7 +501,7 @@ class ModelToolVqmod extends Model {
 		if (is_array($array) && count($array) > 0) {
 			$array_keys = array_keys($array);
 			foreach ($array_keys as $key) {
-				$temp[$key]=$array[$key][$index];
+				$temp[$key] = $array[$key][$index];
 			}
 			if (!$natsort) {
 				if ($order == 'asc') asort($temp);
@@ -518,6 +566,8 @@ class ModelToolVqmod extends Model {
 				'vqm_trunk' => (isset($data['vqm_trunk']) ? $data['vqm_trunk'] : 'http://vqmod.googlecode.com/svn/trunk/'),
 				'vqm_opcrt' => (isset($data['vqm_opcrt']) ? $data['vqm_opcrt'] : 'platforms/opencart/'),
 				'vqm_create' => (isset($data['vqm_create']) ? $data['vqm_create'] : 1),
+				'vqm_backup' => (isset($data['vqm_backup']) ? preg_replace("/$vqm/", '', $data['vqm_backup'], 1) : 'backups/'),
+				'vqm_backups' => (isset($data['vqm_backups']) ? $data['vqm_backups'] : 3),
 				'text_height' => $data['text_height'],
 				'text_style' => $data['text_style'],
 				'show_trim' => (isset($data['show_trim']) ? $data['show_trim'] : 1),
@@ -528,6 +578,10 @@ class ModelToolVqmod extends Model {
 				'manual_css' => $data['manual_css']
 			);
 			if ($type == 'check') {
+				// Only save vqm_backup when user saves settings
+				if (!isset($data['vqm_backup'])) unset($sorted['vqm_backup']);
+				// Only save show_trim when user saves settings
+				if (!isset($data['show_trim'])) unset($sorted['show_trim']);
 				$cache = DIR_CACHE . 'cache.vqmoderator';
 				if (!file_exists($cache) && touch($cache)) {
 					chmod($cache, 0777);
@@ -595,6 +649,7 @@ class ModelToolVqmod extends Model {
 				// POSTed data (or previously saved data)
 				if (!isset($data['vqm'])) $data['vqm'] = '../vqmod/';
 				$data['vqm_xml'] = $data['vqm'] . $data['vqm_xml'];
+				if (isset($data['vqm_backup'])) $data['vqm_backup'] = $data['vqm'] . $data['vqm_backup'];
 				$data['vqm_cache'] = $data['vqm'] . $data['vqm_cache'];
 				$data['log_file'] = $data['vqm'] . $data['log_file'];
 			}
@@ -617,6 +672,8 @@ class ModelToolVqmod extends Model {
 			if (!isset($data['vqm_trunk'])) $data['vqm_trunk'] = 'http://vqmod.googlecode.com/svn/trunk/';
 			if (!isset($data['vqm_opcrt'])) $data['vqm_opcrt'] = 'platforms/opencart/';
 			if (!isset($data['vqm_create']) || !$create) $data['vqm_create'] = ($create) ? 1 : 0;
+			if (!isset($data['vqm_backup']) && $installed) $data['vqm_backup'] = $data['vqm'] . 'backups/'; // Only save trim when user saves settings
+			if (!isset($data['vqm_backups'])) $data['vqm_backups'] = 3;
 			if (!isset($data['text_height'])) $data['text_height'] = 250;
 			if (!isset($data['text_style'])) $data['text_style'] = 1;
 			if (!isset($data['show_trim']) && $installed) $data['show_trim'] = 1; // Only save trim when user saves settings
@@ -833,6 +890,7 @@ class ModelToolVqmod extends Model {
 
 		$file = $this->cleanText($data['filename']);
 		$dir = $this->config->get('vqm_xml');
+		$bdir = $this->config->get('vqm_backup');
 		if ($manual && $data['generatexml']) {
 			if ($newfiles) $manual .= "\t\t<div class=\"newfiles\">" . $this->language->get('text_add_newfiles') . "</div>\n";
 			$html = $manual . "\t\t".'<script type="text/javascript">'."\n" .
@@ -854,11 +912,27 @@ class ModelToolVqmod extends Model {
 			$file .= '.tmp';
 		} else {
 			$file .= '.xml';
+			$rename = false;
 			if (file_exists($dir . $file)) {
-				$this->renameFile($dir . $file, $dir . $file . '.bak');
+				$rename = $file;
 			} elseif ($data['oldfile'] && substr($data['oldfile'], -4) != '.bak' && file_exists($dir . $data['oldfile'])) {
-				$this->renameFile($dir . $data['oldfile'], $dir . $file . '.bak'); // Rename orinal to .bak
-				if (substr($data['oldfile'], -1) == '_') $file .= '_';
+				$rename = $data['oldfile']; // Rename orinal to .bak
+			}
+			if ($rename) {
+				$backups = (int)$this->config->get('vqm_backups');
+				if (file_exists($bdir . $file . '.bak') && $backups > 1) {
+					// Rename backup files from high to low
+					for ($i = $backups - 1; $i >= 1; $i--) {
+						if (file_exists($bdir . $file . '-' . $i . '.bak') && ($i + 1 < $backups)) {
+							$this->renameFile($bdir . $file . '-' . $i . '.bak', $bdir . $file . '-' . ($i+1) . '.bak');
+						}
+					}
+					$this->renameFile($bdir . $file . '.bak', $bdir . $file . '-1.bak');
+				}
+				$this->renameFile($dir . $rename, $bdir . $file . '.bak');
+			}
+			if ($data['oldfile'] && substr($data['oldfile'], -1) == '_' && file_exists($dir . $data['oldfile'])) {
+				$file .= '_';
 			}
 			$this->deleteAll('cache');
 		}
@@ -994,13 +1068,14 @@ class ModelToolVqmod extends Model {
 	}
 
 	public function installvQModerator($version) {
+		$admin = basename(dirname(DIR_APPLICATION));
 		$data = '<?xml version="1.0" encoding="UTF-8"?>
 <modification>
 	<id><![CDATA[vQModerator Installation]]></id>
 	<version><![CDATA[' . $this->version . ']]></version>
 	<vqmver><![CDATA[' . $version . ']]></vqmver>
 	<author><![CDATA[The Wizard of Osch, for www.CrystalCopy.nl]]></author>
-	<file name="admin/controller/tool/vqmod.php" error="abort">
+	<file name="' . $admin . '/controller/tool/vqmod.php" error="abort">
 		<operation info="This is automatically added by the installation script. It holds your installed vQMod version number.">
 			<search position="after" index="1"><![CDATA[public function index() {]]></search>
 			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQMod Version
@@ -1012,7 +1087,7 @@ class ModelToolVqmod extends Model {
 		define("VQMODVER", "' . $version . '");]]></add>
 		</operation>
 	</file>
-	<file name="admin/controller/common/header.php" error="abort">
+	<file name="' . $admin . '/controller/common/header.php" error="abort">
 		<operation info="Adding Link to vQModerator in Header">
 			<search position="after" index="1"><![CDATA[$this->data[\'text_zone\']]]></search>
 			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQModerator Text
@@ -1024,14 +1099,14 @@ class ModelToolVqmod extends Model {
 			$this->data[\'vqmoderator\'] = $this->url->link(\'tool/vqmod\', \'token=\' . $this->session->data[\'token\'], \'SSL\');]]></add>
 		</operation>
 	</file>
-	<file name="admin/language/*/common/header.php" error="abort">
+	<file name="' . $admin . '/language/*/common/header.php" error="abort">
 		<operation info="Adding Link to vQModerator in Header (Language definitions)">
 			<search position="before" index="1"><![CDATA[?>]]></search>
 			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQModerator Text
 $_[\'text_vqmoderator\']                       = \'vQModerator\';]]></add>
 		</operation>
 	</file>
-	<file name="admin/view/template/common/header.tpl" error="abort">
+	<file name="' . $admin . '/view/template/common/header.tpl" error="abort">
 		<operation info="Adding Link to vQModerator in Header (Change this operation to change the location of the header-link)">
 			<search position="after" index="1"><![CDATA[<li><a href="<?php echo $feed; ?>"><?php echo $text_feed; ?></a></li>]]></search>
 			<add><![CDATA[<?php // BOF - Zappo - vQModerator - ONE LINE - Added vQModerator to Menu ?>

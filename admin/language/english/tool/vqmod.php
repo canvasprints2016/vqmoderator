@@ -51,6 +51,7 @@ $_['text_vqmod_uploads']	= 'Select a vQMod XML file to upload to your store.<br/
 $_['text_vqmod_exists']		= 'XML file already Installed!';
 $_['text_vqmod_uninstall']	= 'The uploaded XML file already exists, and seems to be installed.<br/>Would you like to continue, or un-install it first?';
 $_['text_backup_file']		= ' - [BaCkUp FiLe]';
+$_['text_moved_backup']		= 'Found Backup-file "%s" in your XML Folder. Moved to Backup Folder!';
 $_['text_xml_install']		= '<img src="view/image/attention.png" alt="Install" title="Uninstalled! Install?" />';
 $_['text_xml_uninstall']	= '<img src="view/image/success.png" alt="Uninstall" title="Installed! Uninstall?" />';
 $_['text_xml_invalid']		= '<img src="view/image/delete.png" alt="Invalid!" title="XML File is invalid!" />';
@@ -63,6 +64,11 @@ $_['text_expand']			= 'Expand ';
 $_['text_this_file']		= 'this file';
 $_['text_this_operation']	= 'this operation';
 $_['text_all_files']		= 'All files';
+$_['text_sort']				= 'Sort by:';
+$_['text_name_asc']			= 'Name A-Z';
+$_['text_name_desc']		= 'Name Z-A';
+$_['text_type_asc']			= 'Type Rev.';
+$_['text_type_desc']		= 'Type';
 
 // Manual Installation Texts
 $_['text_by']				= 'By: %s';
@@ -143,6 +149,8 @@ $_['button_set_manual']		= 'HTML Manual';
 // Entry
 $_['entry_vqm']				= 'vQMod Location:';
 $_['entry_vqm_xml']			= 'vQMod XML Path:';
+$_['entry_vqm_backup']		= 'vQMods XML Backup Path:';
+$_['entry_vqm_backups']		= 'Number of Backups:';
 $_['entry_vqm_cache']		= 'vQMod Cache Path:';
 $_['entry_vqm_trunk']		= 'vQMod Online Repository:<span class="help"><b>Only change if you know what you\'re doing!</b><br/>Default: <i>http://vqmod.googlecode.com/svn/trunk/</i></span>';
 $_['entry_vqm_opcrt']		= 'Repository OpenCart files:<span class="help"><b>Only change if you know what you\'re doing!</b><br/>Default: <i>platforms/opencart/</i></span>';
@@ -220,6 +228,7 @@ $_['error_no_file']			= 'Error: No file selected!';
 $_['error_no_xml']			= 'Error: The selected file is not a vQMod XML file!';
 $_['error_invalid_xml']		= 'Error: The selected file is not a valid XML file!';
 $_['error_move']			= 'Error: Failed moving file!';
+$_['error_moving_backup']	= 'Error: Could not move Backup file "%s" to Backup Folder!';
 $_['error_delete']			= 'Warning: Could not delete file "%s"! (CHECK MANUALLY!)';
 $_['error_create']			= 'Warning: Could not create file "%s"!';
 $_['error_overwrite']		= 'Warning: File "%s" exists, and I could not overwite it!';

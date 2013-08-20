@@ -18,15 +18,19 @@ class ControllerToolVqmod extends Controller {
 		$settings_check = $this->model_tool_vqmod->settings('check');
 		$vqm_version = $settings_check['versions'][0];
 		$vqm_ver = (int)str_replace('.', '', $vqm_version);
+		// Save ChangeLog and Version for later use.
 		$changelog = explode("\n", $settings_check['versions'][1]);
 		$vqmr_version = array_shift($changelog);
 		$this->data['changelog'] = implode('', $changelog);
 		$vqmr_ver = (int)str_replace('.', '', $vqmr_version);
 		unset($settings_check['versions']);
-		if (!defined('VQMODVER') || $this->config->get('vqm_trunk') === null) { // Check for newest setting
+		if (!defined('VQMODVER') || $this->config->get('vqm_backup') === null) { // Check for newest setting
 			$this->model_tool_vqmod->settings($settings_check); // re-save settings, adding new stuff
-			if (!defined('VQMODVER')) define('VQMODVER', '0');
-			$this->error['warning'] = $this->language->get('error_installation');
+			$this->error['warning'] = $this->language->get('error_settings');
+			if (!defined('VQMODVER')) {
+				define('VQMODVER', '0');
+				$this->error['warning'] = $this->language->get('error_installation');
+			}
 		}
 		$this->model_tool_vqmod->deleteAll($this->config->get('vqm_xml'), '*.tmp');
 		if (!isset($this->session->data['x_able'])) $this->session->data['x_able'] = array();
@@ -97,7 +101,7 @@ class ControllerToolVqmod extends Controller {
 			} else {
 				$action = $this->request->get['action'];
 				$file = (isset($this->request->get['file'])) ? $this->request->get['file'] : false;
-				$path = $this->config->get('vqm_xml') . $file;
+				$path = (substr($file,-4) == '.bak' ? $this->config->get('vqm_backup') : $this->config->get('vqm_xml')) . $file;
 				if (!isset($this->session->data['success'])) $this->session->data['success'] = '';
 				if ($file) {
 					if (isset($this->request->get['files'])) {
@@ -164,6 +168,11 @@ class ControllerToolVqmod extends Controller {
 		$this->data['text_delete_files'] = $this->language->get('text_delete_files');
 		$this->data['text_overwrite_header'] = $this->language->get('text_overwrite_header');
 		$this->data['text_overwrite_files'] = $this->language->get('text_overwrite_files');
+		$this->data['text_sort'] = $this->language->get('text_sort');
+		$this->data['text_name_asc'] = $this->language->get('text_name_asc');
+		$this->data['text_name_desc'] = $this->language->get('text_name_desc');
+		$this->data['text_type_desc'] = $this->language->get('text_type_desc');
+		$this->data['text_type_asc'] = $this->language->get('text_type_asc');
 		$this->data['entry_select_file'] = $this->language->get('entry_select_file');
 		$this->data['error_no_file'] = $this->language->get('error_no_file');
 		$this->data['error_no_xml'] = $this->language->get('error_no_xml');
@@ -221,8 +230,20 @@ class ControllerToolVqmod extends Controller {
 		$this->data['vqmod_new_file'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/editor', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['vqmod_config'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/saveconfig', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['vqmod_check_dir'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/checkdir', 'token=' . $this->session->data['token'] . '&dir=', 'SSL'));
+		$this->data['vqmod_setfilter'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/setfilter', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['vqmod_log'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/log', 'token=' . $this->session->data['token'] . '&file=', 'SSL'));
 		$this->data['vqmod_log_download'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/download', 'token=' . $this->session->data['token'] . '&file=', 'SSL'));
+
+		// Added XML sorting
+		$this->data['xml_sorter'] = false;
+		if (isset($this->request->get['sort']) && isset($this->request->get['order'])) {
+			$this->data['xml_sorter'] = $this->request->get['sort'] . '.' . $this->request->get['order'];
+		}
+		// Added XML filter
+		$this->data['xml_filter'] = 'e';
+		if (isset($this->session->data['vqmod']['filter'])) {
+			$this->data['xml_filter'] = $this->session->data['vqmod']['filter'];
+		}
 
 		if (isset($this->error['warning'])) {
 			$this->data['error_warning'] = $this->error['warning'];
@@ -560,7 +581,7 @@ class ControllerToolVqmod extends Controller {
 					$file = $this->config->get('log_file');
 					$type = 'text/plain';
 				} else {
-					$file = $this->config->get('vqm_xml') . $filename;
+					$file = (substr($filename,-4) == '.bak' ? $this->config->get('vqm_backup') : $this->config->get('vqm_xml')) . $filename;
 					$type = 'text/xml';
 				}
 				if (substr($file, -1) == '_') $filename = substr($filename, 0, -1);
@@ -608,6 +629,15 @@ class ControllerToolVqmod extends Controller {
 			@unlink($zipped);
 
 			$this->response->setOutput($temp);
+		}
+	}
+
+  	public function setfilter() {
+		$this->session->data['vqmod']['filter'] = '';
+		if (isset($this->request->post['xml_filter'])) {
+			$filters = '';
+			foreach ($this->request->post['xml_filter'] as $filter) $filters .= substr($filter, 0, 1);
+			$this->session->data['vqmod']['filter'] = $filters;
 		}
 	}
 
@@ -823,7 +853,7 @@ class ControllerToolVqmod extends Controller {
 				// Set and Save permissions
 				$chmods = array(
 					'../index.php' => $this->model_tool_vqmod->setPermission('../index.php', 0755),
-					'../admin' => $this->model_tool_vqmod->setPermission('../admin', 0755),
+					DIR_APPLICATION => $this->model_tool_vqmod->setPermission(DIR_APPLICATION, 0755),
 					'./index.php' => $this->model_tool_vqmod->setPermission('./index.php', 0755)
 				);
 				$json .= file_get_contents(HTTP_CATALOG . str_replace('../', '', $this->config->get('vqm')) . 'install/index.php');
