@@ -1068,7 +1068,7 @@ class ModelToolVqmod extends Model {
 	}
 
 	public function installvQModerator($version) {
-		$admin = basename(dirname(DIR_APPLICATION));
+		$admin = basename(DIR_APPLICATION);
 		$data = '<?xml version="1.0" encoding="UTF-8"?>
 <modification>
 	<id><![CDATA[vQModerator Installation]]></id>
