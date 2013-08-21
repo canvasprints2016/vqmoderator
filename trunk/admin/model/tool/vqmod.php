@@ -668,8 +668,8 @@ class ModelToolVqmod extends Model {
 				$data['log_size'] = round($val / 1048576);
 			}
 			// Create vqcache folder (also checking create/delete compatibility)
-			$create = $this->model_tool_vqmod->createFile($data['vqm_cache'] . 'temp.tmp', 'Temp File... Delete!!!');
-			if ($create) $create = $this->model_tool_vqmod->deleteFile($data['vqm_cache'] . 'temp.tmp');
+			$create = $this->createFile($data['vqm_cache'] . 'temp.tmp', 'Temp File... Delete!!!');
+			if ($create) $create = $this->deleteFile($data['vqm_cache'] . 'temp.tmp');
 			if (!isset($data['vqm_trunk'])) $data['vqm_trunk'] = 'http://vqmod.googlecode.com/svn/trunk/';
 			if (!isset($data['vqm_opcrt'])) $data['vqm_opcrt'] = 'platforms/opencart/';
 			if (!isset($data['vqm_create']) || !$create) $data['vqm_create'] = ($create) ? 1 : 0;
@@ -1165,7 +1165,8 @@ $_[\'text_vqmoderator\']                       = \'vQModerator\';]]></add>
 		</operation>
 	</file>
 </modification>';
-		return $this->model_tool_vqmod->createFile('../vqmod/xml/vQModerator.xml', $data);
+		$this->deleteAll('cache');
+		return $this->createFile('../vqmod/xml/vQModerator.xml', $data);
 	}
 }
 ?>
