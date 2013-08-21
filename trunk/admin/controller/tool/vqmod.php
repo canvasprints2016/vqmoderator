@@ -28,6 +28,7 @@ class ControllerToolVqmod extends Controller {
 			$this->model_tool_vqmod->settings($settings_check); // re-save settings, adding new stuff
 			$this->error['warning'] = $this->language->get('error_settings');
 			if (!isset($VQMODVER)) {
+				$this->model_tool_vqmod->deleteAll('cache');
 				$VQMODVER = '0';
 				$this->error['warning'] = $this->language->get('error_installation');
 			}
@@ -791,7 +792,6 @@ class ControllerToolVqmod extends Controller {
 		$this->load->language('tool/vqmod');
 		$this->load->model('tool/vqmod');
 		$admin = basename(DIR_APPLICATION);
-		$this->model_tool_vqmod->deleteAll('cache');
 		$json = '';
 		$success = true;
 		$install_vqmod = (isset($this->request->get['vqmod'])) ? $this->request->get['vqmod'] : false;
