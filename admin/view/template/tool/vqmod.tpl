@@ -147,7 +147,7 @@
 $('.vqtooltip').mouseenter(function() {
 	$('#vqtooltip').fadeIn('slow');
 	$(document).mousemove( function(e) {
-		$('#vqtooltip').css({'top': e.pageY + 5, 'left': e.pageX + 5});
+		$('#vqtooltip').css({'top': e.pageY - 40, 'left': e.pageX + 20});
 	});
 }).mouseleave(function() {
 	$('#vqtooltip').fadeOut('slow');

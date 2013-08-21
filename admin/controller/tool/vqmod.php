@@ -854,6 +854,7 @@ class ControllerToolVqmod extends Controller {
 					$remote = 'http://vqmoderator.googlecode.com/svn/trunk/' . $file;
 					if ($file && $this->model_tool_vqmod->isRemoteFile($remote)) {
 						$data = file_get_contents($remote);
+						unlink('../' . $file);
 						if ($success) $success = $this->model_tool_vqmod->createFile('../' . $file, $data, 'text', 0755);
 					} else {
 						$success = false;
