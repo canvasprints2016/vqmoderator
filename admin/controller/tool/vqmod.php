@@ -27,9 +27,9 @@ class ControllerToolVqmod extends Controller {
 			if (strlen(trim($ver)) == 5 && substr_count($ver, '.') == 2) {
 				$vqmr_ver = (int)str_replace('.', '', trim($ver));
 				if ($vqmr_ver <= $this_ver) break;
-				$ver = '<b>' . $ver . '</b>';
+				$ver = '<br /><b>' . $ver . '</b>';
 			}
-			$this->data['changelog'] .= $ver . '<br />';
+			$this->data['changelog'] .= $ver;
 		}
 		$vqmr_ver = (int)str_replace('.', '', trim($vqmr_version));
 		unset($settings_check['versions']);
