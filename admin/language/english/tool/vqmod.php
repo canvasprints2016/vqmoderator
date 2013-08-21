@@ -219,7 +219,7 @@ $_['entry_info']			= 'Info:<span class=\"help\">Information about this operation
 // Error
 $_['error_permission']		= 'Warning: You do not have permission to modify vQMods!';
 $_['error_settings']		= 'Warning: You have not setup vQModerator! Please <a href="#" class="vqmod-config" onclick="return false;">Edit your Settings</a>!';
-$_['error_installation']	= 'Warning: vQModerator not Fully installed! Please <a href="#" class="vqmod-config vqmr-update vqtooltip" onclick="return false;">Update vQModerator</a>!';
+$_['error_installation']	= 'Warning: vQModerator not Fully installed! Please <a href="#" class="vqmod-config vqmr-update" onclick="return false;">Update vQModerator</a>!';
 $_['error_position_all']	= 'Warning: This file contains a "Search Replace All" tag!\nThis functionality is removed starting vQMod v2.4.0!\n\nPlease make sure you make the appropriate changes to this Operation!\nIt is marked in Red - (Fix before saving!!!)';
 $_['error_saving_xml']		= 'Warning: Error saving vQMod XML! Check folder permissions.';
 $_['error_upload']			= 'Error: Uploading Failed!';

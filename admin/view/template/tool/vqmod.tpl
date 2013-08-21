@@ -175,7 +175,7 @@ $(document).ready(function() {
 		window.location.href = '<?php echo $vqmod_page; ?>&sort=' + args[0] + '&order=' + args[1];
 	});
 	// Press shift to generate vQModifications
-	$('.content').keydown(function(e) {
+	$(document).keydown(function(e) {
 		$(this).disableSelection();
 		if (e.shiftKey) {
 			var div = $('#vqgenerate');
