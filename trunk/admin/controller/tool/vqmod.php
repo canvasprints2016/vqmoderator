@@ -844,6 +844,7 @@ class ControllerToolVqmod extends Controller {
 				$modver = $modver[0]; // Version is first line (rest is changelog)
 			}
 			if ((int)str_replace('.', '', $modver) > (int)str_replace('.', '', $this->version)) {
+				$this->model_tool_vqmod->version = $modver;
 				// Update vQModerator from Repository
 				$files = 'http://vqmoderator.googlecode.com/svn/trunk/files';
 				$files = ($this->model_tool_vqmod->isRemoteFile($files)) ? file_get_contents($files) : '';
