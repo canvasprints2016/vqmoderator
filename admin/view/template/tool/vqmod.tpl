@@ -147,9 +147,12 @@
 $('.vqtooltip').mouseenter(function() {
 	$('#vqtooltip').fadeIn('slow');
 	$(document).mousemove( function(e) {
-		$('#vqtooltip').css({'top':e.pageY,'left':e.pageX});
+		$('#vqtooltip').css({'top': e.pageY + 5, 'left': e.pageX + 5});
 	});
 }).mouseleave(function() {
+	$('#vqtooltip').fadeOut('slow');
+	$(document).unbind("mousemove");
+}).click(function() {
 	$('#vqtooltip').fadeOut('slow');
 	$(document).unbind("mousemove");
 });

@@ -1,6 +1,7 @@
 <?php
 class ModelToolVqmod extends Model {
 	public $version = '1.0.8';
+	public $vqmver = '';
 
 	public function getFiles() {
 		$files = array();
@@ -129,7 +130,7 @@ class ModelToolVqmod extends Model {
 					);
 				}
 
-				$required = (isset($xml->vqmver) && (int)str_ireplace(array('v','.'), '', $xml->vqmver) > (int)str_ireplace(array('v','.'), '', VQMODVER)) ? 'color:red;' : '';
+				$required = (isset($xml->vqmver) && (int)str_ireplace(array('v','.'), '', $xml->vqmver) > (int)str_ireplace(array('v','.'), '', $this->vqmver)) ? 'color:red;' : '';
 				$required = (isset($xml->vqmver['required']) && $xml->vqmver['required']) ? ' <' . ($required ? 'b' : 'small') . ' style="margin-left:8px;' . $required . '">(' . $this->language->get('text_required') . ')</' . ($required ? 'b' : 'small') . '>' : '';
 				$file = array(
 					'file' => $filename,
@@ -1125,12 +1126,22 @@ class ModelToolVqmod extends Model {
 	<version><![CDATA[' . $this->version . ']]></version>
 	<vqmver><![CDATA[' . $version . ']]></vqmver>
 	<author><![CDATA[The Wizard of Osch, for www.CrystalCopy.nl]]></author>
+	<file name="' . $admin . '/controller/tool/vqmod.php" error="abort">
+		<operation info="This is automatically added by the installation script. It holds your installed vQMod version number.">
+			<search position="after" index="1"><![CDATA[public function index() {]]></search>
+			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQMod Version
+		$VQMODVER = ' . $version . ';]]></add>
+		</operation>
+		<operation info="This is automatically added by the installation script. It holds your installed vQMod version number.">
+			<search position="after" index="1"><![CDATA[public function editor() {]]></search>
+			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQMod Version
+		$VQMODVER = ' . $version . ';]]></add>
+		</operation>
+	</file>
 	<file name="' . $admin . '/controller/common/header.php" error="abort">
 		<operation info="Adding Link to vQModerator in Header">
 			<search position="after" index="1"><![CDATA[$this->data[\'text_zone\']]]></search>
-			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQMod Version
-		define("VQMODVER", "' . $version . '");
-		// BOF - Zappo - vQModerator - ONE LINE - Added vQModerator Text
+			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQModerator Text
 		$this->data[\'text_vqmoderator\'] = $this->language->get(\'text_vqmoderator\');]]></add>
 		</operation>
 		<operation info="Adding Link to vQModerator in Header">
