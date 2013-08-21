@@ -42,7 +42,7 @@
               <td><?php echo $entry_xml_author;?></td>
               <td><input id="author" name="author" type="text" style="width:400px;" value="<?php echo $vqmod_info->author; ?>"></td>
             </tr>
-            <?php }?>
+            <?php } ?>
             <tr>
               <td><?php echo $entry_vqm_version;?> <span id="vqmver-required" style="<?php if ((int)str_ireplace(array('v','.'), '', $vqmod_info->vqmver) < 240) echo 'display:none;';?>margin-left:20px;"><?php echo $entry_vqmver_required;?> <input id="vqmodver-required" name="vqmodver_required" type="checkbox" value="1" <?php if (isset($vqmod_info->vqmver['required']) && $vqmod_info->vqmver['required']) echo 'checked="checked" '; ?>></span><?php echo $entry_vqmver_help;?></td>
               <td><input id="vqmodver" name="vqmodver" type="text" style="width:50px;" value="<?php echo str_ireplace('v', '', $vqmod_info->vqmver); ?>" class="numeric"> <?php echo $text_vqmod_version;?>

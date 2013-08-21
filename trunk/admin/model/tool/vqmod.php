@@ -1130,12 +1130,12 @@ class ModelToolVqmod extends Model {
 		<operation info="This is automatically added by the installation script. It holds your installed vQMod version number.">
 			<search position="after" index="1"><![CDATA[public function index() {]]></search>
 			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQMod Version
-		$VQMODVER = ' . $version . ';]]></add>
+		$VQMODVER = "' . $version . '";]]></add>
 		</operation>
 		<operation info="This is automatically added by the installation script. It holds your installed vQMod version number.">
 			<search position="after" index="1"><![CDATA[public function editor() {]]></search>
 			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQMod Version
-		$VQMODVER = ' . $version . ';]]></add>
+		$VQMODVER = "' . $version . '";]]></add>
 		</operation>
 	</file>
 	<file name="' . $admin . '/controller/common/header.php" error="abort">
