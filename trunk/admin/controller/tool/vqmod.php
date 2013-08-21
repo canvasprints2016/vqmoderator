@@ -24,14 +24,15 @@ class ControllerToolVqmod extends Controller {
 		$this->data['changelog'] = implode('', $changelog);
 		$vqmr_ver = (int)str_replace('.', '', $vqmr_version);
 		unset($settings_check['versions']);
-		if (!defined('VQMODVER') || $this->config->get('vqm_backup') === null) { // Check for newest setting
+		if (!isset($VQMODVER) || $this->config->get('vqm_backup') === null) { // Check for newest setting
 			$this->model_tool_vqmod->settings($settings_check); // re-save settings, adding new stuff
 			$this->error['warning'] = $this->language->get('error_settings');
-			if (!defined('VQMODVER')) {
-				define('VQMODVER', '0');
+			if (!isset($VQMODVER)) {
+				$VQMODVER = '0';
 				$this->error['warning'] = $this->language->get('error_installation');
 			}
 		}
+		$this->model_tool_vqmod->vqmver = $VQMODVER;
 		$this->model_tool_vqmod->deleteAll($this->config->get('vqm_xml'), '*.tmp');
 		if (!isset($this->session->data['x_able'])) $this->session->data['x_able'] = array();
 
@@ -130,8 +131,8 @@ class ControllerToolVqmod extends Controller {
 		
 		$this->data['column_name'] = $this->language->get('column_name');
 		$this->data['column_version'] = $this->language->get('column_version');
-		$this->data['column_vqmver'] = $this->language->get('column_vqmver') . ' <small style="margin-left:8px;">(' . VQMODVER . ')</small>';
-		if ($vqm_ver > (int)str_replace('.', '', VQMODVER)) {
+		$this->data['column_vqmver'] = $this->language->get('column_vqmver') . ' <small style="margin-left:8px;">(' . $VQMODVER . ')</small>';
+		if ($vqm_ver > (int)str_replace('.', '', $VQMODVER)) {
 			$this->data['column_vqmver'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-config vqm-update">(' . $this->language->get('text_update_found') . $vqm_version . ')</small>';
 		}
 		$this->data['column_author'] = $this->language->get('column_author');
@@ -427,7 +428,7 @@ class ControllerToolVqmod extends Controller {
 		$this->data['text_all_files'] = $this->language->get('text_all_files');
 		$this->data['text_vqmod_config'] = $this->language->get('text_vqmod_config');
 		$this->data['text_vqmod_log'] = $this->language->get('text_vqmod_log');
-		$this->data['text_vqmod_version'] = sprintf($this->language->get('text_vqmod_version'), VQMODVER);
+		$this->data['text_vqmod_version'] = sprintf($this->language->get('text_vqmod_version'), $VQMODVER);
 		$this->data['text_generate_mods'] = $this->language->get('text_generate_mods');
 		$this->data['text_autosave_time'] = $this->language->get('text_autosave_time');
 		$this->data['text_autosave_help'] = $this->language->get('text_autosave_help');
