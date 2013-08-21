@@ -616,11 +616,8 @@ class ModelToolVqmod extends Model {
 						// Get vQModerator version from repository
 						$file = 'http://vqmoderator.googlecode.com/svn/trunk/version';
 						if ($this->isRemoteFile($file)) {
-							$changelog = file_get_contents($file);
-							$changelog = explode("\n", $changelog);
-							$version = array_shift($changelog); // Version is first line (rest is changelog)
-							$changelog = implode("\n<br />", $changelog);
-							$versions[1] = $version . "\n" . $changelog;
+							$version = file_get_contents($file);
+							if ($version) $versions[1] = $version;
 						}
 					}
 					if ($cache && isset($versions[1])) file_put_contents($cache, implode(';', $versions));

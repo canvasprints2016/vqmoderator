@@ -20,18 +20,18 @@ class ControllerToolVqmod extends Controller {
 		$vqm_ver = (int)str_replace('.', '', $vqm_version);
 		// Save ChangeLog and Version for later use.
 		$this->data['changelog'] = '';
-		$changelog = explode("\n", $settings_check['versions'][1]);
-		$vqmr_version = $changelog[0];
+		$changelog = preg_split("/\r\n|\n|\r/", $settings_check['versions'][1]);
+		$vqmr_version = trim($changelog[0]);
 		$this_ver = (int)str_replace('.', '', $this->model_tool_vqmod->version);
-		foreach ($changelog as $ver) {
+		foreach ($changelog as $i => $ver) {
 			if (strlen(trim($ver)) == 5 && substr_count($ver, '.') == 2) {
 				$vqmr_ver = (int)str_replace('.', '', trim($ver));
 				if ($vqmr_ver <= $this_ver) break;
-				$ver = '<br /><b>' . $ver . '</b>';
+				$ver = ($i ? '<br/>' : '') . '<b>' . $ver . '</b>';
 			}
-			$this->data['changelog'] .= $ver;
+			$this->data['changelog'] .= $ver . '<br/>';
 		}
-		$vqmr_ver = (int)str_replace('.', '', trim($vqmr_version));
+		$vqmr_ver = (int)str_replace('.', '', $vqmr_version);
 		unset($settings_check['versions']);
 		if (!isset($VQMODVER) || $this->config->get('vqm_backup') === null) { // Check for newest setting
 			$this->model_tool_vqmod->settings($settings_check); // re-save settings, adding new stuff
@@ -851,7 +851,7 @@ class ControllerToolVqmod extends Controller {
 			$modver = 'http://vqmoderator.googlecode.com/svn/trunk/version';
 			$modver = ($this->model_tool_vqmod->isRemoteFile($modver)) ? file_get_contents($modver) : 0;
 			if ($modver) {
-				$modver = explode("\n", $modver);
+				$modver = preg_split("/\r\n|\n|\r/", $modver);
 				$modver = trim($modver[0]); // Version is first line (rest is changelog)
 			}
 			if ((int)str_replace('.', '', $modver) > (int)str_replace('.', '', $this->version)) {
@@ -859,8 +859,9 @@ class ControllerToolVqmod extends Controller {
 				// Update vQModerator from Repository
 				$files = 'http://vqmoderator.googlecode.com/svn/trunk/files';
 				$files = ($this->model_tool_vqmod->isRemoteFile($files)) ? file_get_contents($files) : '';
-				$files = explode("\n", $files);
+				$files = preg_split("/\r\n|\n|\r/", $files);
 				foreach ($files as $file) {
+					$file = trim($file);
 					$remote = 'http://vqmoderator.googlecode.com/svn/trunk/' . $file;
 					if ($file && $this->model_tool_vqmod->isRemoteFile($remote)) {
 						$data = file_get_contents($remote);
