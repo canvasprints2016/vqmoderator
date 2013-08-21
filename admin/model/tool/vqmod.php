@@ -1165,7 +1165,6 @@ $_[\'text_vqmoderator\']                       = \'vQModerator\';]]></add>
 		</operation>
 	</file>
 </modification>';
-		$this->deleteAll('cache');
 		return $this->createFile('../vqmod/xml/vQModerator.xml', $data);
 	}
 }
