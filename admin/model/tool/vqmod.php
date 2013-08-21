@@ -1125,22 +1125,12 @@ class ModelToolVqmod extends Model {
 	<version><![CDATA[' . $this->version . ']]></version>
 	<vqmver><![CDATA[' . $version . ']]></vqmver>
 	<author><![CDATA[The Wizard of Osch, for www.CrystalCopy.nl]]></author>
-	<file name="' . $admin . '/controller/tool/vqmod.php" error="abort">
-		<operation info="This is automatically added by the installation script. It holds your installed vQMod version number.">
-			<search position="after" index="1"><![CDATA[public function index() {]]></search>
-			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQMod Version
-		define("VQMODVER", "' . $version . '");]]></add>
-		</operation>
-		<operation info="This is automatically added by the installation script. It holds your installed vQMod version number.">
-			<search position="after" index="1"><![CDATA[public function editor() {]]></search>
-			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQMod Version
-		define("VQMODVER", "' . $version . '");]]></add>
-		</operation>
-	</file>
 	<file name="' . $admin . '/controller/common/header.php" error="abort">
 		<operation info="Adding Link to vQModerator in Header">
 			<search position="after" index="1"><![CDATA[$this->data[\'text_zone\']]]></search>
-			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQModerator Text
+			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQMod Version
+		define("VQMODVER", "' . $version . '");
+		// BOF - Zappo - vQModerator - ONE LINE - Added vQModerator Text
 		$this->data[\'text_vqmoderator\'] = $this->language->get(\'text_vqmoderator\');]]></add>
 		</operation>
 		<operation info="Adding Link to vQModerator in Header">

@@ -841,7 +841,7 @@ class ControllerToolVqmod extends Controller {
 			$modver = ($this->model_tool_vqmod->isRemoteFile($modver)) ? file_get_contents($modver) : 0;
 			if ($modver) {
 				$modver = explode("\n", $modver);
-				$modver = $modver[0]; // Version is first line (rest is changelog)
+				$modver = trim($modver[0]); // Version is first line (rest is changelog)
 			}
 			if ((int)str_replace('.', '', $modver) > (int)str_replace('.', '', $this->version)) {
 				$this->model_tool_vqmod->version = $modver;
