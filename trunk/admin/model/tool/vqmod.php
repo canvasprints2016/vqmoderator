@@ -1,6 +1,6 @@
 <?php
 class ModelToolVqmod extends Model {
-	public $version = '1.0.7';
+	public $version = '1.0.8';
 
 	public function getFiles() {
 		$files = array();
@@ -148,7 +148,7 @@ class ModelToolVqmod extends Model {
 			}
 		}
 		libxml_use_internal_errors($use_errors); // Reset error setting
-		$sort = 'name';
+		$sort = 'file';
 		$order = 'asc';
 		if (isset($this->request->get['sort'])) {
 			$sort = $this->request->get['sort'];
@@ -643,7 +643,7 @@ class ModelToolVqmod extends Model {
 				}
 				if (!isset($data['vqm_xml'])) $data['vqm_xml'] = $data['vqm'] . 'xml/';
 				if (!isset($data['vqm_cache'])) $data['vqm_cache'] = $data['vqm'] . 'vqcache/';
-				$data['log_file'] = 'vqmod.log';
+				if (!isset($data['log_file'])) $data['log_file'] = $data['vqm'] . 'logs/';
 				$installed = false;
 			} else {
 				// POSTed data (or previously saved data)
@@ -735,6 +735,56 @@ class ModelToolVqmod extends Model {
 		}
 
 		file_put_contents($logPath, implode(PHP_EOL, $txt), FILE_APPEND);
+	}
+
+	public function generateAll() {
+		$files = array();
+		$error = $message = array();
+		$use_errors = libxml_use_internal_errors(true); // Save error setting
+		$xml_dir = $this->config->get('vqm_xml');
+		$dirfiles = glob($xml_dir . '*.xml');
+		foreach ($dirfiles as $path) {
+			$file = str_replace($xml_dir, '', $path);
+			if ($file != 'vqmod_opencart.xml') {
+				$xml = simplexml_load_file($path);
+				// XML Error handling
+				if (!$xml) {
+					$error[] = $errmsg = sprintf($this->language->get('text_xml_not_valid'), $file);
+					$this->log(array(array(
+						'info' => array(
+							'modFile' => $file,
+							'id' => (isset($xml->id) ? $xml->id : $file),
+							'version' => (isset($xml->version) ? $xml->version : ''),
+							'vqmver' => (isset($xml->vqmver) ? $xml->vqmver : ''),
+							'author' => (isset($xml->author) ? $xml->author : '')
+						),
+						'log' => $errmsg
+					)));
+				}
+				libxml_clear_errors();
+				if (isset($xml->file)) {
+					foreach ($xml->file as $file) if (!in_array($file['name'], $files)) $files[] = $file['name'];
+				}
+			}
+		}
+		libxml_use_internal_errors($use_errors); // Reset error setting
+
+		$success = false;
+		if ($files) {
+			$this->deleteAll('cache');
+			foreach ($files as $file) {
+				VQMod::modcheck($file);
+			}
+			$cache_dir = $this->config->get('vqm_cache');
+			$files = glob($cache_dir . '*.*');
+			foreach ($files as $file) {
+				if (is_file($file)) {
+					$newfile = str_replace($cache_dir . 'vq2-', $this->config->get('vqm') . 'test/vQModded/', str_replace('_', '/', $file));
+					$success = $this->createFile($newfile); // Pre-create file, to also get dirs in place
+					if ($success) $this->renameFile($file, $newfile);
+				}
+			}
+		}
 	}
 
 	public function vqGen($data) {

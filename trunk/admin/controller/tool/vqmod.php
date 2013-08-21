@@ -168,6 +168,7 @@ class ControllerToolVqmod extends Controller {
 		$this->data['text_delete_files'] = $this->language->get('text_delete_files');
 		$this->data['text_overwrite_header'] = $this->language->get('text_overwrite_header');
 		$this->data['text_overwrite_files'] = $this->language->get('text_overwrite_files');
+		$this->data['text_generate_mods'] = $this->language->get('text_generate_mods');
 		$this->data['text_sort'] = $this->language->get('text_sort');
 		$this->data['text_name_asc'] = $this->language->get('text_name_asc');
 		$this->data['text_name_desc'] = $this->language->get('text_name_desc');
@@ -178,6 +179,8 @@ class ControllerToolVqmod extends Controller {
 		$this->data['error_no_xml'] = $this->language->get('error_no_xml');
 
 		$this->data['text_log_load'] = $this->language->get('text_log_load');
+
+		$this->data['loading_image'] = "view/image/loading.png";
 
 		$log_file = $this->config->get('log_file');
 		// Check if vQMod is Installed (overwrites previous errors)
@@ -212,8 +215,8 @@ class ControllerToolVqmod extends Controller {
 		$enable = $disable = $this->data['install_all'] = $this->data['uninstall_all'] = false;
 		foreach ($this->data['vqmods'] as $vqmod) {
 			if ($vqmod['file'] != 'vQModerator.xml') {
-				if ($vqmod['status']) $disable = true;
-				else $enable = true;
+				if ($vqmod['type'] == 'enabled') $disable = true;
+				elseif ($vqmod['type'] != 'backup') $enable = true;
 			}
 		}
 		if ($enable) {
@@ -231,6 +234,7 @@ class ControllerToolVqmod extends Controller {
 		$this->data['vqmod_config'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/saveconfig', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['vqmod_check_dir'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/checkdir', 'token=' . $this->session->data['token'] . '&dir=', 'SSL'));
 		$this->data['vqmod_setfilter'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/setfilter', 'token=' . $this->session->data['token'], 'SSL'));
+		$this->data['vqmod_generate'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/generator', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['vqmod_log'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/log', 'token=' . $this->session->data['token'] . '&file=', 'SSL'));
 		$this->data['vqmod_log_download'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/download', 'token=' . $this->session->data['token'] . '&file=', 'SSL'));
 
@@ -424,6 +428,7 @@ class ControllerToolVqmod extends Controller {
 		$this->data['text_vqmod_config'] = $this->language->get('text_vqmod_config');
 		$this->data['text_vqmod_log'] = $this->language->get('text_vqmod_log');
 		$this->data['text_vqmod_version'] = sprintf($this->language->get('text_vqmod_version'), VQMODVER);
+		$this->data['text_generate_mods'] = $this->language->get('text_generate_mods');
 		$this->data['text_autosave_time'] = $this->language->get('text_autosave_time');
 		$this->data['text_autosave_help'] = $this->language->get('text_autosave_help');
 		$this->data['text_seconds_togo'] = $this->language->get('text_seconds_togo');
@@ -449,6 +454,7 @@ class ControllerToolVqmod extends Controller {
 		$this->data['vqmod_check_dir'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/checkdir', 'token=' . $this->session->data['token'] . '&dir=', 'SSL'));
 		$this->data['vqmod_check_search'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/checksearch', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['vqmod_search_delay'] = $this->config->get('search_delay');
+		$this->data['vqmod_generate'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/generator', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['vqmod_log'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/log', 'token=' . $this->session->data['token'] . '&file=', 'SSL'));
 		$this->data['vqmod_log_download'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/download', 'token=' . $this->session->data['token'] . '&file=', 'SSL'));
 		$this->data['vqmod_restart'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/editor', 'token=' . $this->session->data['token'] . ($file ? '&file=' . $file : ''), 'SSL'));
@@ -641,6 +647,11 @@ class ControllerToolVqmod extends Controller {
 		}
 	}
 
+  	public function generator() {
+		$this->load->model('tool/vqmod');
+		$this->model_tool_vqmod->generateAll();
+	}
+
   	public function saveconfig() {
 		$this->load->language('tool/vqmod');
 
@@ -778,6 +789,7 @@ class ControllerToolVqmod extends Controller {
 	public function vqinstall() {
 		$this->load->language('tool/vqmod');
 		$this->load->model('tool/vqmod');
+		$admin = basename(DIR_APPLICATION);
 		$json = '';
 		$success = true;
 		$install_vqmod = (isset($this->request->get['vqmod'])) ? $this->request->get['vqmod'] : false;
@@ -799,6 +811,8 @@ class ControllerToolVqmod extends Controller {
 					$data = file_get_contents($remote);
 					// Get the newly installed vqmod version
 					if ($local == 'vqmod/vqmod.php') $version = $this->getVersion($data);
+					// Set the admin folder in vQMod Install file
+					if ($local == 'vqmod/install/index.php') $data = str_replace("= 'admin';", "= '$admin';", $data);
 					if ($success) $success = $this->model_tool_vqmod->createFile('../' . $local, $data, 'text', 0755);
 				} else {
 					$success = false;
@@ -853,7 +867,7 @@ class ControllerToolVqmod extends Controller {
 				// Set and Save permissions
 				$chmods = array(
 					'../index.php' => $this->model_tool_vqmod->setPermission('../index.php', 0755),
-					DIR_APPLICATION => $this->model_tool_vqmod->setPermission(DIR_APPLICATION, 0755),
+					'../' . $admin => $this->model_tool_vqmod->setPermission('../' . $admin, 0755),
 					'./index.php' => $this->model_tool_vqmod->setPermission('./index.php', 0755)
 				);
 				$json .= file_get_contents(HTTP_CATALOG . str_replace('../', '', $this->config->get('vqm')) . 'install/index.php');

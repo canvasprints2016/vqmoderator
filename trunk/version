@@ -1,6 +1,5 @@
-1.0.7
-- Bugfix: Installation check (minor bug)
-- Fixed: Detect admin folder (if custom name is used)
-- Added: XML Backup Folder
-- Added: Filter XML files by: Enabled/Disabled/Backup
-- Added: Sort XML files by name or type
+1.0.8
+- Added: Holding [SHIFT] will allow you to generate all modification files.
+- Added: Testing against already vQModded files (using above).
+- Added: If you changed your admin folder, vQModerator will also adjust vQMod with your change.
+- Some small bugfixes.
