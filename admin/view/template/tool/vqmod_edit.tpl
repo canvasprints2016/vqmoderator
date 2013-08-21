@@ -44,7 +44,7 @@
             </tr>
             <?php }?>
             <tr>
-              <td><?php echo $entry_vqm_version;?> <span id="vqmver-required" style="<?php if ((int)str_ireplace(array('v','.'), '', $vqmod_info->vqmver) < 240) echo 'display:none;';?>margin-left:20px;"><?php echo $entry_vqmver_required;?> <input id="vqmodver-required" name="vqmodver_required" type="checkbox" value="1" <?php if ($vqmod_info->vqmver['required']) echo 'checked="checked" '; ?>></span><?php echo $entry_vqmver_help;?></td>
+              <td><?php echo $entry_vqm_version;?> <span id="vqmver-required" style="<?php if ((int)str_ireplace(array('v','.'), '', $vqmod_info->vqmver) < 240) echo 'display:none;';?>margin-left:20px;"><?php echo $entry_vqmver_required;?> <input id="vqmodver-required" name="vqmodver_required" type="checkbox" value="1" <?php if (isset($vqmod_info->vqmver['required']) && $vqmod_info->vqmver['required']) echo 'checked="checked" '; ?>></span><?php echo $entry_vqmver_help;?></td>
               <td><input id="vqmodver" name="vqmodver" type="text" style="width:50px;" value="<?php echo str_ireplace('v', '', $vqmod_info->vqmver); ?>" class="numeric"> <?php echo $text_vqmod_version;?>
               <?php if ($filename === false) { ?><input type="hidden" name="oldfile" value="<?php echo $oldfile;?>" /><input name="filename" type="hidden" value="<?php echo substr($oldfile, 0, -4);?>" /><?php } ?>
               <?php if (!$entry_xml_author) { ?><input name="author" type="hidden" style="width:400px;" value="<?php echo $vqmod_info->author; ?>"><?php } ?>
@@ -124,8 +124,9 @@
     <?php } ?>
 </div>
 <img id="image-preview" style="display:none;position:fixed;" src="" />
-<div id="loading-vqmod" style="position:fixed;width:100%;text-align:center;top:180px;"><img alt="Loading..." src="<?php echo $loading_image;?>" /></div>
+<div id="vqloading" style="position:fixed;width:100%;text-align:center;top:180px;"><img alt="Loading..." src="<?php echo $loading_image;?>" /></div>
 <div id="saved-vqmod" style="position:fixed;width:100%;text-align:center;top:200px;display:none;"><img alt="Saved!!!" src="<?php echo $saved_image;?>" /></div>
+<div id="vqgenerate" style="display:none;position:absolute;"><?php echo $text_generate_mods;?></div>
 <script type="text/javascript">
 <?php if (!$vqconfig['text_style']) { ?>
 // Following line of code is minified Tabby 0.12
@@ -611,6 +612,40 @@ $('input[type="text"]', '.chmod').live('keyup', function() {
 });
 
 $(document).ready(function() {
+	// Press shift to generate vQModifications
+	$(document).keydown(function(e) {
+		$(this).disableSelection();
+		if (e.shiftKey) {
+			var div = $('#vqgenerate');
+			div.fadeIn();
+			$(document).mousemove(function(ev) {
+				div.css({
+				   left:  ev.pageX -28,
+				   top:   ev.pageY -25
+				});
+			});
+		}
+	}).keyup(function() {
+		$(this).enableSelection();
+		$('#vqgenerate').fadeOut(function(){
+			$(document).unbind("mousemove");
+		});
+	});
+	$('#vqgenerate').click(function() {
+		$(document).unbind("keydown");
+		$('#vqgenerate').hide();
+		$('#vqloading').fadeIn();
+		$.ajax({
+			url: '<?php echo $vqmod_generate;?>',
+			success: function() {
+				$('.loading').remove();
+			},
+			complete: function() {
+				$('#vqloading').fadeOut('slow');
+			}
+		});
+	});
+
 	var interval;
 	$("#autosave").focus(function() {
 		$(this).val('');
@@ -742,7 +777,7 @@ $(document).ready(function() {
 
 	$('input[type="text"]', '.chmod').blur();
 
-	$('#loading-vqmod').fadeOut('slow');
+	$('#vqloading').fadeOut('slow');
 <?php if ($vqconfig['text_style']) { ?>
 	var configCodeMirror = CodeMirror.fromTextArea(document.getElementById('manual_css'), {
 		height: "120px",

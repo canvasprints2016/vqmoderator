@@ -140,18 +140,18 @@
 </div>
 <div id="vqdialog" style="display:none;"></div>
 <div id="vqtooltip" style="display:none;position:absolute;"><?php echo $changelog;?></div>
+<div id="vqloading" style="position:fixed;width:100%;text-align:center;top:180px;display:none;"><img alt="Loading..." src="<?php echo $loading_image;?>" /></div>
+<div id="vqgenerate" style="display:none;position:absolute;"><?php echo $text_generate_mods;?></div>
 <script type="text/javascript">
 <?php if ($changelog) { ?>
-var mouseX;
-var mouseY;
-$(document).mousemove( function(e) {
-	mouseX = e.pageX;
-	mouseY = e.pageY;
-});
 $('.vqtooltip').mouseenter(function() {
-	$('#vqtooltip').css({'top':mouseY,'left':mouseX}).fadeIn('slow');
+	$('#vqtooltip').fadeIn('slow');
+	$(document).mousemove( function(e) {
+		$('#vqtooltip').css({'top':e.pageY,'left':e.pageX});
+	});
 }).mouseleave(function() {
 	$('#vqtooltip').fadeOut('slow');
+	$(document).unbind("mousemove");
 });
 <?php } ?>
 $(document).ready(function() {
@@ -170,6 +170,39 @@ $(document).ready(function() {
 	$('#xml-sorter').change(function() {
 		var args = $(this).val().split('.');
 		window.location.href = '<?php echo $vqmod_page; ?>&sort=' + args[0] + '&order=' + args[1];
+	});
+	// Press shift to generate vQModifications
+	$(document).keydown(function(e) {
+		$(this).disableSelection();
+		if (e.shiftKey) {
+			var div = $('#vqgenerate');
+			div.fadeIn();
+			$(document).mousemove(function(ev) {
+				div.css({
+				   left:  ev.pageX -28,
+				   top:   ev.pageY -25
+				});
+			});
+		}
+	}).keyup(function() {
+		$(this).enableSelection();
+		$('#vqgenerate').fadeOut(function(){
+			$(document).unbind("mousemove");
+		});
+	});
+	$('#vqgenerate').click(function() {
+		$(document).unbind("keydown");
+		$('#vqgenerate').hide();
+		$('#vqloading').fadeIn();
+		$.ajax({
+			url: '<?php echo $vqmod_generate;?>',
+			success: function() {
+				$('.loading').remove();
+			},
+			complete: function() {
+				$('#vqloading').fadeOut('slow');
+			}
+		});
 	});
 
 	$('.uninstall').click(function() {

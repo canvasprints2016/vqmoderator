@@ -10,6 +10,19 @@
   background-color:#DAFFAF;
   padding:10px;
 }
+#vqgenerate {
+  border:2px solid #004799;
+  -webkit-border-radius:7px 7px 7px 7px;
+  -moz-border-radius:7px 7px 7px 7px;
+  -khtml-border-radius:7px 7px 7px 7px;
+  border-radius:7px 7px 7px 7px;
+  -webkit-box-shadow:7px 7px 7px #BBB;
+  -moz-box-shadow:7px 7px 7px #BBB;
+  box-shadow:7px 7px 7px #BBB;
+  background-color:#CAE3FF;
+  padding: 10px 10px 10px 60px;
+  cursor: pointer;
+}
 fieldset {
   position:relative;
   border-color:#004799;

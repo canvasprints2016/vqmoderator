@@ -34,6 +34,7 @@ $_['text_disableall']		= 'Successfully disabled All vQMods!';
 $_['text_enable']			= 'Successfully enabled "%s"!';
 $_['text_enableall']		= 'Successfully enabled All vQMods!';
 $_['text_deleteall']		= 'Successfully deleted file(s): [%s]!';
+$_['text_generate_mods']	= 'Click NOW to Generate ALL the modified files for all ENABLED extensions!<br />The files will be saved to your vQMod Test folder, under "vQModded".<br />When editing files, you can compare against the generated files too!';
 $_['text_delete_header']	= 'Also Delete New Files?';
 $_['text_delete_files']		= 'This extension has created new files!<br/>Please <b>select the files</b> you would like <b>to delete</b>, and click "Continue":<br/>';
 $_['text_overwrite_header']	= 'Also Overwrite Existing Files?';
