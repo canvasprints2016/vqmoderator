@@ -862,6 +862,7 @@ class ControllerToolVqmod extends Controller {
 				}
 				if ($success) $json .= $this->language->get('text_success_installl');
 			}
+			$this->model_tool_vqmod->deleteAll('cache');
 			$this->model_tool_vqmod->installvQModerator($version);
 			$json .= sprintf($this->language->get('text_success_instal'), $re);
 
