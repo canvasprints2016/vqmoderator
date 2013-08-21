@@ -171,9 +171,8 @@ $(document).ready(function() {
 		var args = $(this).val().split('.');
 		window.location.href = '<?php echo $vqmod_page; ?>&sort=' + args[0] + '&order=' + args[1];
 	});
-<?php if (!$changelog) { ?>
 	// Press shift to generate vQModifications
-	$(document).keydown(function(e) {
+	$('.content').keydown(function(e) {
 		$(this).disableSelection();
 		if (e.shiftKey) {
 			var div = $('#vqgenerate');
@@ -205,7 +204,6 @@ $(document).ready(function() {
 			}
 		});
 	});
-<?php } ?>
 
 	$('.uninstall').click(function() {
 		var url = $(this).attr('href'),
