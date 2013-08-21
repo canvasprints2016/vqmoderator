@@ -19,10 +19,19 @@ class ControllerToolVqmod extends Controller {
 		$vqm_version = $settings_check['versions'][0];
 		$vqm_ver = (int)str_replace('.', '', $vqm_version);
 		// Save ChangeLog and Version for later use.
+		$this->data['changelog'] = '';
 		$changelog = explode("\n", $settings_check['versions'][1]);
-		$vqmr_version = array_shift($changelog);
-		$this->data['changelog'] = implode('', $changelog);
-		$vqmr_ver = (int)str_replace('.', '', $vqmr_version);
+		$vqmr_version = $changelog[0];
+		$this_ver = (int)str_replace('.', '', $this->model_tool_vqmod->version);
+		foreach ($changelog as $ver) {
+			if (strlen(trim($ver)) == 5 && substr_count($ver, '.') == 2) {
+				$vqmr_ver = (int)str_replace('.', '', trim($ver));
+				if ($vqmr_ver <= $this_ver) break;
+				$ver = '<b>' . $ver . '</b>';
+			}
+			$this->data['changelog'] .= $ver . '<br />';
+		}
+		$vqmr_ver = (int)str_replace('.', '', trim($vqmr_version));
 		unset($settings_check['versions']);
 		if (!isset($VQMODVER) || $this->config->get('vqm_backup') === null) { // Check for newest setting
 			$this->model_tool_vqmod->settings($settings_check); // re-save settings, adding new stuff
@@ -126,7 +135,7 @@ class ControllerToolVqmod extends Controller {
 		if ($success) $this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
 
 		$this->data['heading_title'] = $this->language->get('heading_title');
-		if ($vqmr_ver > str_replace('.', '', $this->model_tool_vqmod->version)) {
+		if ($vqmr_ver > str_replace('.', '', $this_ver)) {
 			$this->data['heading_title'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-config vqmr-update vqtooltip">(' . $this->language->get('text_update_found') . $vqmr_version . ')</small>';
 		}
 		
