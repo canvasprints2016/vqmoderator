@@ -1,4 +1,4 @@
-1.0.8
+1.0.5
 - Added: Holding [SHIFT] will allow you to generate all modification files.
 - Added: Testing against already vQModded files (using above).
 - Added: If you changed your admin folder, vQModerator will also adjust vQMod with your change.
