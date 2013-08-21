@@ -791,6 +791,7 @@ class ControllerToolVqmod extends Controller {
 		$this->load->language('tool/vqmod');
 		$this->load->model('tool/vqmod');
 		$admin = basename(DIR_APPLICATION);
+		$this->model_tool_vqmod->deleteAll('cache');
 		$json = '';
 		$success = true;
 		$install_vqmod = (isset($this->request->get['vqmod'])) ? $this->request->get['vqmod'] : false;
@@ -862,7 +863,6 @@ class ControllerToolVqmod extends Controller {
 				}
 				if ($success) $json .= $this->language->get('text_success_installl');
 			}
-			$this->model_tool_vqmod->deleteAll('cache');
 			$this->model_tool_vqmod->installvQModerator($version);
 			$json .= sprintf($this->language->get('text_success_instal'), $re);
 
