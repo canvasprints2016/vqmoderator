@@ -784,21 +784,19 @@ class ModelToolVqmod extends Model {
 		$success = false;
 		if ($files) {
 			$this->deleteAll('cache');
-			//$VQMod = new VQMod();
-			foreach ($files as $file) {
-				VQMod::modcheck($file);
-			}
 			if (defined('SUBFOLDER') && defined('LOCALPATH')) {
 				$tests = '../../';
 			} else {
 				$tests = $this->config->get('vqm') . 'test/';
 			}
+			//$VQMod = new VQMod();
 			foreach ($files as $file) {
-				$newfile = $this->config->get('vqm_cache') . 'vq2-' . str_replace('/', '_', $file);
-				if (is_file($newfile)) {
+				VQMod::modcheck($file);
+				$genfile = $this->config->get('vqm_cache') . 'vq2-' . str_replace('/', '_', $file);
+				if (is_file($genfile)) {
 					$newfile = $tests . 'vQModded/' . $file;
 					$success = $this->createFile($newfile); // Pre-create file, to also get dirs in place
-					if ($success) $this->renameFile($file, $newfile);
+					if ($success) $this->renameFile($genfile, $newfile);
 				}
 			}
 		}
