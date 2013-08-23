@@ -964,7 +964,6 @@ class ControllerToolVqmod extends Controller {
 				if ($file && $this->model_tool_vqmod->isRemoteFile($remote)) {
 					$data = file_get_contents($remote);
 					foreach ($dirs as $dir) {
-						unlink($dir . $file);
 						if ($success) $success = $this->model_tool_vqmod->createFile($dir . $file, $data, 'text', 0755);
 					}
 				} else {
