@@ -46,11 +46,9 @@ class ControllerToolVqmod extends Controller {
 				$file = '../../vqmod.txt';
 				if (isset($this->request->get['takeover'])) {
 					$this->model_tool_vqmod->createFile($file, "This file hides the \"OpenCart Local Detected\" message.\nRemove the file to get the message again.");
-				} else {
-					if (file_exists('../vqgen') && !file_exists($file)) {
-						$this->data['takeover'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/takeover', 'token=' . $this->session->data['token'], 'SSL'));
-						$this->error['warning'] = sprintf($this->language->get('text_takeover'), str_replace('&amp;', '&', $this->url->link('tool/vqmod', 'takeover=1&token=' . $this->session->data['token'], 'SSL')));
-					}
+				} elseif (file_exists('../vqgen') && !file_exists($file)) {
+					$this->data['takeover'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/takeover', 'token=' . $this->session->data['token'], 'SSL'));
+					$this->error['warning'] = sprintf($this->language->get('text_takeover'), str_replace('&amp;', '&', $this->url->link('tool/vqmod', 'takeover=1&token=' . $this->session->data['token'], 'SSL')));
 				}
 			}
 		}
@@ -840,7 +838,7 @@ class ControllerToolVqmod extends Controller {
 						$this->model_tool_vqmod->createFile('../../vqmod.txt', "This file hides the \"OpenCart Local Detected\" message.\nRemove the file to get the message again.");
 					} elseif ($file == 'splash.png') {
 						$this->model_tool_vqmod->deleteFile($dir);
-						$created = $this->model_tool_vqmod->createFile($dir, $splash);
+						$this->model_tool_vqmod->createFile($dir, $splash);
 					} elseif (substr($file, -4, 1) !== '.') {
 						$version = (int)$file;
 						// Only install on 1.5.0.0 or higher
@@ -849,6 +847,8 @@ class ControllerToolVqmod extends Controller {
 							$this->model_tool_vqmod->delTree($dir . '/vqgen'); // Remove vQGen
 						}
 					}
+				} else {
+					$this->model_tool_vqmod->delTree('../../' . $file . '/vqgen'); // Remove vQGen
 				}
 			}
 			if ($moderate) $json .= $this->getVQModerator($moderate); // Copy vQModerator to all installations
