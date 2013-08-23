@@ -970,7 +970,7 @@ class ControllerToolVqmod extends Controller {
 					$success = false;
 				}
 			}
-			if ($success) $json .= $this->language->get('text_success_installl');
+			if ($success) $json .= ($dir !== '../') ? $this->language->get('text_success_takeover') : $this->language->get('text_success_installl');
 		}
 		return $json;
 	}

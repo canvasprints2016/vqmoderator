@@ -21,6 +21,7 @@ $_['text_success_instal']	= 'Successfully %screated my own installation file: vQ
 $_['text_success_install']	= 'Successfully got vQMod from googlecode.com repository! <br />Will now try to install... <br />vQMod Says: ';
 $_['text_success_installl']	= 'Successfully updated vQModerator from googlecode.com repository! <br />';
 $_['text_success_afterall']	= '<br />There you go!';
+$_['text_success_takeover']	= 'Successfully Copied vQModerator from googlecode.com repository to all OpenCart Local folders!<br/>You\'ll still have to set permissions and Install for each OpenCart!';
 $_['text_failed_instal']	= '<br />Hmmmm....... Let\'s try that again......<br />vQMod Says: ';
 $_['text_failed_install']	= '<br />No, sorry... Installation FAILED! (Probably can\'t set file permissions...)';
 $_['text_failed_installl']	= 'Could not get vQMod from googlecode.com repository! <br />Please check the repository URL!';
