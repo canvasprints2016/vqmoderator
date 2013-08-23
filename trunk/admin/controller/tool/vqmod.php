@@ -41,6 +41,18 @@ class ControllerToolVqmod extends Controller {
 				$VQMODVER = '0';
 				$this->error['warning'] = $this->language->get('error_installation');
 			}
+		} else { // vQModerator installed --> Check for OpenCart Local by UK Site Builder
+			if (defined('SUBFOLDER') && defined('LOCALPATH')) {
+				$file = '../../vqmod.txt';
+				if (isset($this->request->get['takeover'])) {
+					$this->model_tool_vqmod->createFile($file, "This file hides the \"OpenCart Local Detected\" message.\nRemove the file to get the message again.");
+				} else {
+					if (file_exists('../vqgen') && !file_exists($file)) {
+						$this->data['takeover'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/takeover', 'token=' . $this->session->data['token'], 'SSL'));
+						$this->error['warning'] = sprintf($this->language->get('text_takeover'), str_replace('&amp;', '&', $this->url->link('tool/vqmod', 'takeover=1&token=' . $this->session->data['token'], 'SSL')));
+					}
+				}
+			}
 		}
 		$this->model_tool_vqmod->vqmver = $VQMODVER;
 		$this->model_tool_vqmod->deleteAll($this->config->get('vqm_xml'), '*.tmp');
@@ -775,16 +787,24 @@ class ControllerToolVqmod extends Controller {
 			}
 		}
 		if ($file && $search && file_exists($file)) {
-			$tests = $this->config->get('vqm') . 'test/';
+			$subfolder = '';
+			if (defined('SUBFOLDER') && defined('LOCALPATH')) {
+				$subfolder = SUBFOLDER;
+				$tests = '../../';
+			} else {
+				$tests = $this->config->get('vqm') . 'test/';
+			}
 			if (file_exists($tests) && is_dir($tests)) {
 				$dirfiles = glob($tests . '*');
 				foreach ($dirfiles as $path) {
-					$files = $path . substr($file, 2);
-					if (file_exists($files)) {
-						$files = file_get_contents($files);
-						$found[basename($path)] = substr_count($files, $search);
-					} else {
-						$found[basename($path)] = 'no file';
+					if (is_dir($path) && $path != '../..' . $subfolder) {
+						$files = $path . substr($file, 2);
+						if (file_exists($files)) {
+							$files = file_get_contents($files);
+							$found[basename($path)] = substr_count($files, $search);
+						} else {
+							$found[basename($path)] = 'no file';
+						}
 					}
 				}
 			}
@@ -797,13 +817,53 @@ class ControllerToolVqmod extends Controller {
 		$this->response->setOutput(json_encode($found));
 	}
 
-	public function vqinstall() {
+	// Takeover from vQGen when using OpenCart Local from UK Site Builder
+	public function takeover() {
+		$this->load->language('tool/vqmod');
+		$this->load->model('tool/vqmod');
+		$root = filter_input(INPUT_SERVER, 'DOCUMENT_ROOT');
+		$json = '';
+		$versions = glob($root . '/*');
+		$splash = 'http://vqmoderator.googlecode.com/svn/trunk/oclocal/splash.png';
+		$splash = ($this->model_tool_vqmod->isRemoteFile($splash)) ? file_get_contents($splash) : false;
+		$index = 'http://vqmoderator.googlecode.com/svn/trunk/oclocal/index.php';
+		$index = ($this->model_tool_vqmod->isRemoteFile($index)) ? file_get_contents($index) : false;
+		if ($splash && $index) { // Got the takeover files
+			$moderate = array();
+			foreach ($versions as $dir) {
+				$file = str_replace($root . '/', '', $dir);
+				if ('/'.$file != SUBFOLDER) {
+					$dir = '../../' . $file;
+					if ($file == 'index.php') {
+						$this->model_tool_vqmod->deleteFile($dir);
+						$this->model_tool_vqmod->createFile($dir, $index);
+						$this->model_tool_vqmod->createFile('../../vqmod.txt', "This file hides the \"OpenCart Local Detected\" message.\nRemove the file to get the message again.");
+					} elseif ($file == 'splash.png') {
+						$this->model_tool_vqmod->deleteFile($dir);
+						$created = $this->model_tool_vqmod->createFile($dir, $splash);
+					} elseif (substr($file, -4, 1) !== '.') {
+						$version = (int)$file;
+						// Only install on 1.5.0.0 or higher
+						if (is_dir($root . '/' . $file) && $version >= 1500) {
+							$moderate[] = $dir . '/';
+							$this->model_tool_vqmod->delTree($dir . '/vqgen'); // Remove vQGen
+						}
+					}
+				}
+			}
+			if ($moderate) $json .= $this->getVQModerator($moderate); // Copy vQModerator to all installations
+		}
+		$this->session->data['success'] = $json;
+		$this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
+	}
+
+	public function vqinstall($install_vqmod = false) {
 		$this->load->language('tool/vqmod');
 		$this->load->model('tool/vqmod');
 		$admin = basename(DIR_APPLICATION);
 		$json = '';
 		$success = true;
-		$install_vqmod = (isset($this->request->get['vqmod'])) ? $this->request->get['vqmod'] : false;
+		if (isset($this->request->get['vqmod'])) $install_vqmod = $this->request->get['vqmod'];
 		if ($install_vqmod && $install_vqmod != 'xist') {
 			$trunk = $this->config->get('vqm_trunk');
 			if (!$trunk) $trunk = 'http://vqmod.googlecode.com/svn/trunk/';
@@ -847,34 +907,11 @@ class ControllerToolVqmod extends Controller {
 				$this->model_tool_vqmod->deleteFile('../vqmod/xml/vQModerator.xml');
 				$re = 'Re-';
 			}
-			// Get repository vQModerator version
-			$modver = 'http://vqmoderator.googlecode.com/svn/trunk/version';
-			$modver = ($this->model_tool_vqmod->isRemoteFile($modver)) ? file_get_contents($modver) : 0;
-			if ($modver) {
-				$modver = preg_split("/\r\n|\n|\r/", $modver);
-				$modver = trim($modver[0]); // Version is first line (rest is changelog)
+			$json = $this->getVQModerator();
+			if ($json) {
+				$this->model_tool_vqmod->installvQModerator($version);
+				$json .= sprintf($this->language->get('text_success_instal'), $re);
 			}
-			if ((int)str_replace('.', '', $modver) > (int)str_replace('.', '', $this->version)) {
-				$this->model_tool_vqmod->version = $modver;
-				// Update vQModerator from Repository
-				$files = 'http://vqmoderator.googlecode.com/svn/trunk/files';
-				$files = ($this->model_tool_vqmod->isRemoteFile($files)) ? file_get_contents($files) : '';
-				$files = preg_split("/\r\n|\n|\r/", $files);
-				foreach ($files as $file) {
-					$file = trim($file);
-					$remote = 'http://vqmoderator.googlecode.com/svn/trunk/' . $file;
-					if ($file && $this->model_tool_vqmod->isRemoteFile($remote)) {
-						$data = file_get_contents($remote);
-						unlink('../' . $file);
-						if ($success) $success = $this->model_tool_vqmod->createFile('../' . $file, $data, 'text', 0755);
-					} else {
-						$success = false;
-					}
-				}
-				if ($success) $json .= $this->language->get('text_success_installl');
-			}
-			$this->model_tool_vqmod->installvQModerator($version);
-			$json .= sprintf($this->language->get('text_success_instal'), $re);
 
 			if ($install_vqmod) {
 				$json .= $this->language->get('text_success_install');
@@ -904,6 +941,39 @@ class ControllerToolVqmod extends Controller {
 		}
 
 		$this->response->setOutput($json);
+	}
+	private function getVQModerator($dirs = array('../')) {
+		$success = true;
+		$json = '';
+		// Get repository vQModerator version
+		$modver = 'http://vqmoderator.googlecode.com/svn/trunk/version';
+		$modver = ($this->model_tool_vqmod->isRemoteFile($modver)) ? file_get_contents($modver) : 0;
+		if ($modver) {
+			$modver = preg_split("/\r\n|\n|\r/", $modver);
+			$modver = trim($modver[0]); // Version is first line (rest is changelog)
+		}
+		if ((int)str_replace('.', '', $modver) >= (int)str_replace('.', '', $this->model_tool_vqmod->version)) {
+			$this->model_tool_vqmod->version = $modver;
+			// Get vQModerator from Repository
+			$files = 'http://vqmoderator.googlecode.com/svn/trunk/files';
+			$files = ($this->model_tool_vqmod->isRemoteFile($files)) ? file_get_contents($files) : '';
+			$files = preg_split("/\r\n|\n|\r/", $files);
+			foreach ($files as $file) {
+				$file = trim($file);
+				$remote = 'http://vqmoderator.googlecode.com/svn/trunk/' . $file;
+				if ($file && $this->model_tool_vqmod->isRemoteFile($remote)) {
+					$data = file_get_contents($remote);
+					foreach ($dirs as $dir) {
+						unlink($dir . $file);
+						if ($success) $success = $this->model_tool_vqmod->createFile($dir . $file, $data, 'text', 0755);
+					}
+				} else {
+					$success = false;
+				}
+			}
+			if ($success) $json .= $this->language->get('text_success_installl');
+		}
+		return $json;
 	}
 	private function getVersion($data) {
 		if (!$data || strpos($data, '$_vqversion') === false) return false;

@@ -1,6 +1,6 @@
 <?php
 class ModelToolVqmod extends Model {
-	public $version = '1.0.8';
+	public $version = '1.0.9';
 	public $vqmver = '';
 
 	public function getFiles() {
@@ -237,6 +237,20 @@ class ModelToolVqmod extends Model {
 		return true;
 	}
 
+	public function delTree($dir, $force=true) {
+		if (!is_dir($dir)) return false;
+		if (substr($dir, strlen($dir) - 1, 1) != '/') $dir .= '/';
+		$files = glob($dir . '*', GLOB_MARK);
+		if (!$files || $force) {
+			foreach ($files as $file) {
+				if (is_dir($file)) $this->delTree($file);
+				else unlink($file);
+			}
+			return rmdir($dir);
+		}
+		return false;
+	}
+
 	public function disableFile($file, $log = true, $files = 'all') {
 		$success = false;
 		$error = array();
@@ -373,8 +387,8 @@ class ModelToolVqmod extends Model {
 	public function createFile($file, $data = '', $mime = 'text', $chmod = 0644, $overwrite = true) {
 		if (file_exists($file) && !$overwrite) return 'exists';
 		$reset = array();
+		$path = '../' . ((strpos($file, '../../') !== false) ? '../' : '');
 		$directories = explode('/', dirname(str_replace('../', '', $file)));
-		$path = '../';
 		foreach ($directories as $directory) {
 			$path = $path . '/' . $directory;
 			if (!file_exists($path)) {
@@ -699,8 +713,8 @@ class ModelToolVqmod extends Model {
 		if (!$errors || !is_array($errors)) return false;
 		$txt = array();
 
-		$txt[] = str_repeat('-', 10) . ' Date: ' . date('Y-m-d H:i:s') . ' ~ IP : ' . (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'N/A') . ' ' . str_repeat('-', 10);
-		$txt[] = 'REQUEST URI : ' . $_SERVER['REQUEST_URI'];
+		$txt[] = str_repeat('-', 10) . ' Date: ' . date('Y-m-d H:i:s') . ' ~ IP : ' . (filter_input(INPUT_SERVER, 'REMOTE_ADDR') ? filter_input(INPUT_SERVER, 'REMOTE_ADDR') : 'N/A') . ' ' . str_repeat('-', 10);
+		$txt[] = 'REQUEST URI : ' . filter_input(INPUT_SERVER, 'REQUEST_URI');
 
 		foreach ($errors as $count => $error) {
 			if (isset($error['info'])) {
@@ -770,14 +784,20 @@ class ModelToolVqmod extends Model {
 		$success = false;
 		if ($files) {
 			$this->deleteAll('cache');
+			$VQMod = new VQMod();
 			foreach ($files as $file) {
-				VQMod::modcheck($file);
+				$VQMod->modcheck($file);
 			}
 			$cache_dir = $this->config->get('vqm_cache');
 			$files = glob($cache_dir . '*.*');
+			if (defined('SUBFOLDER') && defined('LOCALPATH')) {
+				$tests = '../../';
+			} else {
+				$tests = $this->config->get('vqm') . 'test/';
+			}
 			foreach ($files as $file) {
 				if (is_file($file)) {
-					$newfile = str_replace($cache_dir . 'vq2-', $this->config->get('vqm') . 'test/vQModded/', str_replace('_', '/', $file));
+					$newfile = str_replace($cache_dir . 'vq2-', $tests . 'vQModded/', str_replace('_', '/', $file));
 					$success = $this->createFile($newfile); // Pre-create file, to also get dirs in place
 					if ($success) $this->renameFile($file, $newfile);
 				}

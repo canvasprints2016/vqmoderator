@@ -70,6 +70,10 @@ $_['text_name_asc']			= 'Name A-Z';
 $_['text_name_desc']		= 'Name Z-A';
 $_['text_type_asc']			= 'Type Rev.';
 $_['text_type_desc']		= 'Type';
+$_['text_takeover']			= 'OpenCart Local Detected!<br/>'.
+	'Do you want vQModerator to <a href="#" id="takeover" onclick="return false;">overtake on compatible versions</a>?<br/>'.
+	'This will update the index page (one login for all carts), copy vQModerator, and remove vQGen.<br/>'.
+	'You\'ll still have to set permissions and install vQModerator.<br/><small><a href="%s">Remove Message</a></small>';
 
 // Manual Installation Texts
 $_['text_by']				= 'By: %s';
@@ -121,7 +125,7 @@ $_['text_file_header']		= 'File to Edit';
 $_['text_newfile_header']	= 'New File to Add';
 $_['text_operation']		= 'Operation to Perform';
 $_['text_search_found']		= 'Seach found <b>%s</b> times.';
-$_['text_search_not_found']	= 'Seach <b>not</b> found!!';
+$_['text_search_not_found']	= 'File <b>not</b> found!!';
 
 // Buttons
 $_['button_config']			= 'Settings';
