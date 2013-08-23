@@ -157,6 +157,11 @@ $('.vqtooltip').mouseenter(function() {
 	$(document).unbind("mousemove");
 });
 <?php } ?>
+<?php if (isset($takeover)) { ?>
+$('#takeover').live('click', function() {
+	window.location.href = '<?php echo $takeover; ?>';
+});
+<?php } ?>
 $(document).ready(function() {
 	$('#xml-filter').buttonset();
 	$('input[name="xml_filter[]"]').change(function() {

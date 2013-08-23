@@ -1,3 +1,7 @@
+1.0.9
+- Added: File Filter, to show only vQModdable files
+- Added: "OpenCart Local" detection/adjustment (by UKSB)
+- Added: Changelog depending on installed version
 1.0.8
 <b>You'll probably have to Update Twice!</b>
 - Added: Holding [SHIFT] will allow you to generate all modification files.

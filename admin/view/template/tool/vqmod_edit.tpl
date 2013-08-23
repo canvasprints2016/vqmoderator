@@ -1084,6 +1084,13 @@ function loadAutocomplete(id, files) {
 				if ($('.file_' + file).is(':visible')) $('.file_' + file).fadeOut();
 			}
 		}
+	}).keyup(function() {
+		var dir = $(this).val().toLower().split('.'), ext = '';
+		if (dir.length > 1) {
+			ext = dir[dir.length-1];
+		}
+		if (ext.length === 3 && ext !== 'php' && ext !== 'tpl') $(this).css('background-color', '#ffbebe');
+		else $(this).css('background-color', '');
 	});
 }
 function loadPathcomplete(id) {
