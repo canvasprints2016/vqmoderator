@@ -1,6 +1,6 @@
 <?php
 class ModelToolVqmod extends Model {
-	public $version = '1.0.9';
+	public $version = '1.1.0';
 	public $vqmver = '';
 
 	public function getFiles() {
@@ -444,62 +444,39 @@ class ModelToolVqmod extends Model {
 		return $perms;
 	}
 
-	public function getTree($path = '../', $dirs = '', $files = 1) {
+	public function getTree($path = '../', $file = '', $files = true, $exts = array('php', 'tpl')) {
 		$ignore = array('vqmod', 'config-dist.php', 'install', 'nbproject', '.svn', '.', '..' );
-		$exts = array('php', 'tpl');
-
+		$real = false;
+		if ($path === true) {
+			$real = true;
+			$path = '../';
+		}
 		$tree = array();
-		$full_path = $path . $dirs;
-		$multi = explode(',', $full_path);
+
+		$multi = explode(',', $file);
 		if (isset($multi[1])) {
-			$full_path = explode('/', $dirs);
-			$full_path = $path . array_pop($multi);
-			$multi = str_replace($path, '', implode(',', $multi)) . ',';
+			$file = array_pop($multi);
+			$multi = implode(',', $multi) . ',';
 		} else {
 			$multi = '';
 		}
-		$full_path = explode('/', $full_path);
-		$find = array_pop($full_path);
-		$len = strlen($find);
-		$full_path = implode('/', $full_path) . '/';
-		if (strpos($full_path, '*') !== false) { // Search-Dir has wildcard: bla*/
-			$tdir = explode('*', $full_path);
-			$wild = $tdir[0];
-			if (substr($tdir[1], 0, 1) == '/' && substr($wild, -1) == '/') $tdir[1] = substr($tdir[1], 1);
-			$sdirs = $this->getTree($wild, '', $files);
-			foreach ($sdirs as $sdir) {
-				$tdirlen = strlen($sdir.$tdir[1]) * -1;
-				if (!$tdirlen || substr($sdir, $tdirlen) == $tdir[1] || is_dir($wild . $sdir . $tdir[1])) { // Rest of wildcard found in results...
-					if (is_dir($wild . $sdir . $tdir[1])) {
-						$dirs = $this->getTree($wild . $sdir . $tdir[1], '', $files);
-						$sdir = '*/' . $tdir[1];
-					} else {
-						$dirs = $this->getTree($wild . $sdir, '', $files);
-						$sdir = str_replace(substr($sdir, 0, $tdirlen), '*', $sdir);
-					}
-					foreach ($dirs as $dir) {
-						$file = $multi . str_replace($path, '', $wild . $sdir) . $dir;
-						if (!in_array($file, $tree)) $tree[] = $file;
-					}
+		$treefile = explode('/', $file);
+		array_pop($treefile);
+		$treefile = $multi . implode('/', $treefile);
+		if ($treefile) $treefile .= '/';
+		if (substr($file, -1) != '*') $file .= '*';
+		$treefiles = glob($path . $file);
+		foreach ($treefiles as $file) {
+			$tfile = basename($file);
+			if (!in_array($tfile, $ignore)) {
+				$tfile = ($real) ? $file : $treefile . $tfile;
+				if (is_file($file) && $files && !in_array($tfile, $tree)) {
+					$ext = explode('.', $file);
+					$ext = array_pop($ext);
+					if ($exts && in_array($ext, $exts)) $tree[] = $tfile;
+				} elseif (is_dir($file) && !in_array($tfile, $tree)) {
+					$tree[] = $tfile . '/';
 				}
-			}
-		} else {
-			if (file_exists($full_path)) {
-				$dh = opendir($full_path);
-				while (false !== ($file = readdir($dh))) {
-					if (!in_array($file, $ignore) && (!$find || substr($file, 0, $len) == $find)) {
-						$dir = $full_path . $file;
-						if (is_dir($dir)) {
-							$dir .= '/';
-							$tree[] = $multi . str_replace($path, '', $dir);
-						} else {
-							$ext = explode('.', $file);
-							$ext = array_pop($ext);
-							if ($files && in_array($ext, $exts)) $tree[] = $multi . str_replace($path, '', $dir);
-						}
-					}
-				}
-				closedir($dh);
 			}
 		}
 		return $tree;
@@ -775,7 +752,13 @@ class ModelToolVqmod extends Model {
 				}
 				libxml_clear_errors();
 				if (isset($xml->file)) {
-					foreach ($xml->file as $file) if (!in_array($file['name'], $files)) $files[] = $file['name'];
+					foreach ($xml->file as $file) {
+						$thefiles = explode(',', $file['name']);
+						foreach ($thefiles as $filename) {
+							$filename = (isset($file['path']) ? $file['path'] : '') . trim($filename);
+							if (!in_array($filename, $files)) $files[] = $filename;
+						}
+					}
 				}
 			}
 		}
@@ -791,12 +774,15 @@ class ModelToolVqmod extends Model {
 			}
 			//$VQMod = new VQMod();
 			foreach ($files as $file) {
-				VQMod::modcheck($file);
-				$genfile = $this->config->get('vqm_cache') . 'vq2-' . str_replace('/', '_', $file);
-				if (is_file($genfile)) {
-					$newfile = $tests . 'vQModded/' . $file;
-					$success = $this->createFile($newfile); // Pre-create file, to also get dirs in place
-					if ($success) $this->renameFile($genfile, $newfile);
+				$genfiles = glob('../' . $file);
+				foreach ($genfiles as $file) {
+					$file = str_replace('../', '', $file);
+					$genfile = VQMod::modcheck($file);
+					if (is_file($genfile)) {
+						$newfile = $tests . 'vQModded/' . $file;
+						$success = $this->createFile($newfile); // Pre-create file, to also get dirs in place
+						if ($success) $this->renameFile($genfile, $newfile);
+					}
 				}
 			}
 		}

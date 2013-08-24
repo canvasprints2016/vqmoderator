@@ -1085,12 +1085,15 @@ function loadAutocomplete(id, files) {
 			}
 		}
 	}).keyup(function() {
-		var dir = $(this).val().toLower().split('.'), ext = '';
+		var dir = $(this).val().toLowerCase().split('.'), ext = '';
 		if (dir.length > 1) {
 			ext = dir[dir.length-1];
 		}
 		if (ext.length === 3 && ext !== 'php' && ext !== 'tpl') $(this).css('background-color', '#ffbebe');
 		else $(this).css('background-color', '');
+	}).blur(function() {
+		var val = $(this).val();
+		if (val && (val.indexOf('/') === 0 || val.indexOf('\\') === 0)) val = val.substr(1);
 	});
 }
 function loadPathcomplete(id) {
@@ -1127,6 +1130,13 @@ function loadPathcomplete(id) {
 			if (ui.item.value.indexOf('*') != -1) {
 				if ($('.file_' + file).is(':visible')) $('.file_' + file).fadeOut();
 			}
+		}
+	}).blur(function() {
+		var val = $(this).val();
+		if (val) {
+			if (val.indexOf('/') === 0 || val.indexOf('\\') === 0) val = val.substr(1);
+			if (val.substr(val.length -1) === '\\') val = val.substr(0, val.length -1);
+			if (val.substr(val.length -1) !== '/') val += '/';
 		}
 	});
 }

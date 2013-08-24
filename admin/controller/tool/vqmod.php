@@ -736,7 +736,7 @@ class ControllerToolVqmod extends Controller {
 		$dir = (isset($this->request->get['dir'])) ? $this->request->get['dir'] : false;
 		$path = (isset($this->request->get['path'])) ? $this->request->get['path'] : '';
 		$files = (isset($this->request->get['files'])) ? (int)$this->request->get['files'] : 1;
-		if ($dir !== false && substr_count($path . $dir, '*') <= 1) {
+		if ($dir !== false) {
 			$this->load->model('tool/vqmod');
 			$json = $this->model_tool_vqmod->getTree('../' . $path, $dir, $files);
 		}
@@ -765,26 +765,15 @@ class ControllerToolVqmod extends Controller {
 
 	public function checksearch() {
 		$found = array();
-		$file = (isset($this->request->post['file'])) ? '../' . $this->request->post['file'] : false;
+		$file = (isset($this->request->post['file'])) ? $this->request->post['file'] : false;
 		$search = (isset($this->request->post['search'])) ? htmlspecialchars_decode($this->request->post['search']) : false;
 		$regex = isset($this->request->post['regex']);
-		if (substr_count($file, '*') == 1) {
+		if (strpos($file, '*') !== false) { // Check first file found (Maybe we can do better?)
 			$this->load->model('tool/vqmod');
-			$sdir = false;
-			$tdir = explode('*', $file);
-			if (isset($tdir[1])) {
-				if (substr($tdir[1], 0, 1) == '/') $tdir[1] = substr($tdir[1], 1);
-				$dirs = $this->model_tool_vqmod->getTree($tdir[0]);
-				foreach ($dirs as $sdir) {
-					$cdir = $tdir[0] . $sdir . $tdir[1];
-					if (file_exists($cdir)) {
-						$file = $cdir;
-						break;
-					}
-				}
-			}
+			$dirs = glob('../' . $file);
+			if ($dirs) $file = str_replace('../', '', $dirs[0]);
 		}
-		if ($file && $search && file_exists($file)) {
+		if ($file && $search && file_exists('../' . $file)) {
 			$subfolder = '';
 			if (defined('SUBFOLDER') && defined('LOCALPATH')) {
 				$subfolder = SUBFOLDER;
@@ -796,7 +785,7 @@ class ControllerToolVqmod extends Controller {
 				$dirfiles = glob($tests . '*');
 				foreach ($dirfiles as $path) {
 					if (is_dir($path) && $path != '../..' . $subfolder) {
-						$files = $path . substr($file, 2);
+						$files = $path . '/' . $file;
 						if (file_exists($files)) {
 							$files = file_get_contents($files);
 							$found[basename($path)] = substr_count($files, $search);
@@ -806,7 +795,7 @@ class ControllerToolVqmod extends Controller {
 					}
 				}
 			}
-			$file = file_get_contents($file);
+			$file = file_get_contents('../' . $file);
 			$count = substr_count($file, $search);
 			if ($regex) $count = preg_match($search, $tmp);
 			if (file_exists($tests) && is_dir($tests)) $found['Installed'] = $count;
