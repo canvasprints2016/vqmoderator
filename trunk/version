@@ -1,3 +1,8 @@
+1.1.0
+- Added: Autocomplete and Search now support multiple wildcards (*)
+- Added: File/Path fields auto-correct wrong slashes
+- Fixed: Generating all modification files skipped wildcard entries
+- Some small bugfixes
 1.0.9
 - Added: File Filter, to show only vQModdable files
 - Added: "OpenCart Local" detection/adjustment (by UKSB)
