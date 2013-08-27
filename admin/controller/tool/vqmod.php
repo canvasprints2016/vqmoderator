@@ -9,40 +9,52 @@ class ControllerToolVqmod extends Controller {
 		$this->document->setTitle($this->language->get('heading_title'));
 		$this->document->addStyle('view/stylesheet/vqmod.css');
 
+		// Get settings (and save default settings if not found)
+		$settings_check = $this->model_tool_vqmod->settings();
 		// Check if vQModerator is installed
-		if ($this->config->get('show_trim') === null) { // Check for oldest setting (covering all versions)
-			$this->model_tool_vqmod->settings(); // Save initial (default) settings
-			$this->error['warning'] = $this->language->get('error_settings');
-		}
-		// Check if vQModerator Settings need updating
-		$settings_check = $this->model_tool_vqmod->settings('check');
-		$vqm_version = $settings_check['versions'][0];
-		$vqm_ver = (int)str_replace('.', '', $vqm_version);
-		// Save ChangeLog and Version for later use.
-		$this->data['changelog'] = '';
-		$changelog = preg_split("/\r\n|\n|\r/", $settings_check['versions'][1]);
-		$vqmr_version = trim($changelog[0]);
-		$this_ver = (int)str_replace('.', '', $this->model_tool_vqmod->version);
-		foreach ($changelog as $i => $ver) {
-			if (strlen(trim($ver)) == 5 && substr_count($ver, '.') == 2) {
-				$vqmr_ver = (int)str_replace('.', '', trim($ver));
-				if ($vqmr_ver <= $this_ver) break;
-				$ver = ($i ? '<br/>' : '') . '<b>' . $ver . '</b>';
+		$install = 0;
+		$warning = '';
+		$xml_ver = $this->model_tool_vqmod->getFile('vQModerator.xml');
+		if (isset($this->request->get['installing'])) { // Installing... Needed to reload.
+			$this->session->data['success'] = $this->language->get('success_continue_vqmoder') . '<br/>';
+			$install = 'continue';
+		} elseif (!$xml_ver->version || $xml_ver->version != $this->model_tool_vqmod->version) {
+			$warning = $this->language->get('error_installation');
+			$install = 1;
+		} elseif (isset($VQMODVER) || $this->config->get('vqm_backup') === null || isset($settings_check['vqm'])) { // vQModerator installed, but some old version
+			$this->model_tool_vqmod->settings($settings_check); // re-save settings, adding/removing new/old stuff
+			if (defined('VQMODVER') || isset($VQMODVER)) { // vQModerator.xml is not (properly) updated...
+				$this->session->data['success'] = $this->language->get('success_continue_vqmoder') . '<br/>';
+				$install = 'continue';
+			} else {
+				$this->session->data['success'] = $this->language->get('success_update_vqmoder');
 			}
-			$this->data['changelog'] .= $ver . '<br/>';
 		}
-		$vqmr_ver = (int)str_replace('.', '', $vqmr_version);
-		unset($settings_check['versions']);
-		if (!isset($VQMODVER) || $this->config->get('vqm_backup') === null) { // Check for newest setting
-			$this->model_tool_vqmod->settings($settings_check); // re-save settings, adding new stuff
-			$this->error['warning'] = $this->language->get('error_settings');
-			if (!isset($VQMODVER)) {
-				$this->model_tool_vqmod->deleteAll('cache');
-				$VQMODVER = '0';
-				$this->error['warning'] = $this->language->get('error_installation');
+		// Check if vQMod is installed (and get settings from vQMod)
+		$VQMODVER = 0;
+		if (class_exists('VQMod')) {
+			$VQMODVER = VQMod::$_vqversion;
+			$log_file = property_exists('VQMod', 'logFolder') ? VQMod::$logFolder : (property_exists('VQMod', 'logFilePath') ? VQMod::$logFilePath : false);
+			if ($log_file && property_exists('VQMod', 'logFileName')) $log_file .= VQMod::$logFileName;
+			$vqm_cache = property_exists('VQMod', 'vqCachePath') ? VQMod::$vqCachePath : false;
+			if (($log_file && '../' . $log_file != $this->config->get('log_file')) || ($vqm_cache && '../' . $vqm_cache != $this->config->get('vqm_cache'))) {
+				$settings_check['log_file'] = '../' . $log_file;
+				$settings_check['vqm_cache'] = '../' . $vqm_cache;
+				$this->model_tool_vqmod->settings($settings_check);
+				$this->session->data['success'] = $this->language->get('success_update_vqmod');
 			}
-		} else { // vQModerator installed --> Check for OpenCart Local by UK Site Builder
-			if (defined('SUBFOLDER') && defined('LOCALPATH')) {
+		} else {
+			if ($warning) $warning .= '<br/>';
+			if (!file_exists($this->model_tool_vqmod->vqm . 'vqmod.php')) $warning .= $this->language->get('error_vqmod_missing');
+			else $warning .= $this->language->get('error_vqmod_install');
+			if (is_numeric($install)) $install += 2;
+		}
+		$this->data['install'] = $install; // 1 = Only vQModerator, 2 = Only vQMod, 3 = Both
+		if ($warning) $this->error['warning'] = $warning;
+		if ($VQMODVER) {
+			$this->model_tool_vqmod->vqmver = $VQMODVER;
+			// vQMod & vQModerator installed --> Check for OpenCart Local by UK Site Builder
+			if (defined('SUBFOLDER') && defined('LOCALPATH') && !isset($warning)) {
 				$file = '../../vqmod.txt';
 				if (isset($this->request->get['takeover'])) {
 					$this->model_tool_vqmod->createFile($file, "This file hides the \"OpenCart Local Detected\" message.\nRemove the file to get the message again.");
@@ -52,8 +64,8 @@ class ControllerToolVqmod extends Controller {
 				}
 			}
 		}
-		$this->model_tool_vqmod->vqmver = $VQMODVER;
-		$this->model_tool_vqmod->deleteAll($this->config->get('vqm_xml'), '*.tmp');
+
+		$this->model_tool_vqmod->deleteAll($this->model_tool_vqmod->xml, '*.tmp');
 		if (!isset($this->session->data['x_able'])) $this->session->data['x_able'] = array();
 
 		if ($this->request->server['REQUEST_METHOD'] == 'POST') {
@@ -86,7 +98,7 @@ class ControllerToolVqmod extends Controller {
 					}
 					if (!isset($this->error['warning'])) {
 						$enable = true;
-						$path = $this->config->get('vqm_xml') . $filename;
+						$path = $this->model_tool_vqmod->xml . $filename;
 						if (!file_exists($path) && file_exists($path . '_')) {
 							$path .= '_';
 							$enable = false;
@@ -94,7 +106,7 @@ class ControllerToolVqmod extends Controller {
 						$msg = '';
 						if (file_exists($path)) {
 							$msg .= ($msg ? '<br/>' : '') . sprintf($this->language->get('text_upload_exists'), $filename);
-							if ($this->model_tool_vqmod->renameFile($path, $this->config->get('vqm_xml') . $filename . '.bak')) {
+							if ($this->model_tool_vqmod->renameFile($path, $this->model_tool_vqmod->xml . $filename . '.bak')) {
 								$msg .= '<br/>' . sprintf($this->language->get('text_upload_backup'), $filename);
 							}
 						}
@@ -122,7 +134,7 @@ class ControllerToolVqmod extends Controller {
 			} else {
 				$action = $this->request->get['action'];
 				$file = (isset($this->request->get['file'])) ? $this->request->get['file'] : false;
-				$path = (substr($file,-4) == '.bak' ? $this->config->get('vqm_backup') : $this->config->get('vqm_xml')) . $file;
+				$path = (substr($file,-4) == '.bak' ? $this->config->get('vqm_backup') : $this->model_tool_vqmod->xml) . $file;
 				if (!isset($this->session->data['success'])) $this->session->data['success'] = '';
 				if ($file) {
 					if (isset($this->request->get['files'])) {
@@ -144,16 +156,36 @@ class ControllerToolVqmod extends Controller {
 
 		if ($success) $this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
 
+		// Get online vQMod & vQModerator Versions
+		if (isset($this->request->get['checkup'])) {
+			$this->model_tool_vqmod->deleteFile(DIR_CACHE . 'cache.vqmoderator');
+			$updated = true;
+		}
+		$versions = $this->model_tool_vqmod->getVersions();
+		$vq_version = $versions['vq'];
+		$vq_ver = (int)str_replace('.', '', $vq_version);
+		$vqm_version = $versions['vqm'];
+		$vqm_ver = (int)str_replace('.', '', $vqm_version);
+		$this->data['changelog'] = $versions['changelog'];
+
 		$this->data['heading_title'] = $this->language->get('heading_title');
-		if ($vqmr_ver > str_replace('.', '', $this_ver)) {
-			$this->data['heading_title'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-config vqmr-update vqtooltip">(' . $this->language->get('text_update_found') . $vqmr_version . ')</small>';
+		if ($vqm_ver > str_replace('.', '', $this->model_tool_vqmod->version)) {
+			$this->data['heading_title'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-install vqmoderator vqtooltip">(' . $this->language->get('text_update_found') . $vqm_version . ')</small>';
+			if ($this->data['install'] === 2) $this->data['install'] = 3;
+			$updated = false;
 		}
 		
 		$this->data['column_name'] = $this->language->get('column_name');
 		$this->data['column_version'] = $this->language->get('column_version');
-		$this->data['column_vqmver'] = $this->language->get('column_vqmver') . ' <small style="margin-left:8px;">(' . $VQMODVER . ')</small>';
-		if ($vqm_ver > (int)str_replace('.', '', $VQMODVER)) {
-			$this->data['column_vqmver'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-config vqm-update">(' . $this->language->get('text_update_found') . $vqm_version . ')</small>';
+		$this->data['column_vqmver'] = $this->language->get('column_vqmver') . ' <small style="margin-left:8px;">(' . ($VQMODVER ? $VQMODVER : $this->language->get('text_not_installed')) . ')</small>';
+		if ($vq_ver > (int)str_replace('.', '', $VQMODVER)) {
+			$this->data['column_vqmver'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-install vqm-update">(' . $this->language->get('text_update_found') . $vq_version . ')</small>';
+			if ($this->data['install'] === 1) $this->data['install'] = 3;
+			$updated = false;
+		}
+		if (isset($this->request->get['checkup']) && $updated) {
+			$this->session->data['success'] = (isset($this->session->data['success']) ? '<br/>' : '') . $this->language->get('text_no_updates');
+			$this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
 		}
 		$this->data['column_author'] = $this->language->get('column_author');
 		$this->data['column_action'] = $this->language->get('column_action');
@@ -161,6 +193,7 @@ class ControllerToolVqmod extends Controller {
 		$this->data['button_config'] = $this->language->get('button_config');
 		$this->data['button_update'] = $this->language->get('button_update');
 		$this->data['button_update_vqmod'] = $this->language->get('button_update_vqmod');
+		$this->data['button_update_check'] = $this->language->get('button_update_check');
 		$this->data['button_log'] = $this->language->get('button_log');
 		$this->data['button_log_clear'] = $this->language->get('button_log_clear');
 		$this->data['button_log_delete'] = $this->language->get('button_log_delete');
@@ -204,14 +237,6 @@ class ControllerToolVqmod extends Controller {
 		$this->data['loading_image'] = "view/image/loading.png";
 
 		$log_file = $this->config->get('log_file');
-		// Check if vQMod is Installed (overwrites previous errors)
-		$vqerror = (!file_exists($this->config->get('vqm') . 'install/index.php')) ? 'missing' : 'install';
-		$installed = ($vqerror != 'missing') ? strpos(file_get_contents('../index.php'), 'VirtualQMOD') : false;
-		if (!$installed) {
-			$this->error['warning'] = $this->language->get('error_vqmod_' . $vqerror);
-		} elseif (!file_exists($log_file)) {
-			$this->model_tool_vqmod->createFile($log_file);
-		}
 		$this->data['log_files'] = array();
 		if (file_exists($log_file)) {
 			if (is_file($log_file)) {
@@ -247,7 +272,7 @@ class ControllerToolVqmod extends Controller {
 			$this->data['uninstall_all'] = $this->url->link('tool/vqmod', 'token=' . $this->session->data['token'] . '&action=disableall', 'SSL');
 		}
 
-		$this->data['vqconfig'] = $this->model_tool_vqmod->settings('get');
+		$this->data['vqconfig'] = $this->model_tool_vqmod->settings();
 
 		$this->data['vqmod_install'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/vqinstall', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['vqmod_page'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
@@ -319,13 +344,18 @@ class ControllerToolVqmod extends Controller {
 
 		$this->document->setTitle($this->language->get('heading_title') . ' - ' . $this->language->get('heading_editor'));
 
+		// Check if vQMod is installed
+		$VQMODVER = 0;
+		if (class_exists('VQMod')) {
+			$VQMODVER = $this->model_tool_vqmod->vqmver = VQMod::$_vqversion;
+		}
 		// Check if vQModerator is installed
-		if ($this->config->get('show_trim') === null) {
-			$this->model_tool_vqmod->settings();
-			$this->error['warning'] = $this->language->get('error_settings');
+		$xml_ver = $this->model_tool_vqmod->getFile('vQModerator.xml');
+		if (!$xml_ver->version || $xml_ver->version != $this->model_tool_vqmod->version) {
+			$this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
 		}
 
-		$file = (isset($this->request->get['file'])) ? $this->request->get['file'] : false;
+		$orig_file = $file = (isset($this->request->get['file'])) ? $this->request->get['file'] : false;
 		if ($this->request->server['REQUEST_METHOD'] == 'POST') {
 			if (!$this->validate()) {
 				$this->error['warning'] = $this->language->get('error_permission');
@@ -333,6 +363,8 @@ class ControllerToolVqmod extends Controller {
 				$file = $this->model_tool_vqmod->vqGen($this->request->post);
 
 				if ($file) {
+					// Check if the filename has changed (and remove old file if so)
+					if ($orig_file && substr($file, -4) == substr($orig_file, -4) && $file != $orig_file) $this->model_tool_vqmod->deleteFile($this->model_tool_vqmod->xml . $orig_file);
 					if ($this->request->post['generatexml']) {
 						if ((int)$this->request->post['generatexml'] >= 2) {
 							echo 'SAVED';
@@ -448,7 +480,7 @@ class ControllerToolVqmod extends Controller {
 		$this->data['text_all_files'] = $this->language->get('text_all_files');
 		$this->data['text_vqmod_config'] = $this->language->get('text_vqmod_config');
 		$this->data['text_vqmod_log'] = $this->language->get('text_vqmod_log');
-		$this->data['text_vqmod_version'] = sprintf($this->language->get('text_vqmod_version'), $VQMODVER);
+		$this->data['text_vqmod_version'] = sprintf($this->language->get('text_vqmod_version'), ($VQMODVER ? $VQMODVER : $this->language->get('text_not_installed')));
 		$this->data['text_generate_mods'] = $this->language->get('text_generate_mods');
 		$this->data['text_autosave_time'] = $this->language->get('text_autosave_time');
 		$this->data['text_autosave_help'] = $this->language->get('text_autosave_help');
@@ -462,7 +494,7 @@ class ControllerToolVqmod extends Controller {
 			date_default_timezone_set('UTC');
 		}
 
-		$this->data['vqconfig'] = $this->model_tool_vqmod->settings('get');
+		$this->data['vqconfig'] = $this->model_tool_vqmod->settings();
 		$this->data['vqmod_info'] = $this->model_tool_vqmod->getFile($file);
 		if (isset($this->data['vqmod_info']->error)) $this->error['warning'] = $this->data['vqmod_info']->error;
 
@@ -478,10 +510,9 @@ class ControllerToolVqmod extends Controller {
 		$this->data['vqmod_generate'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/generator', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['vqmod_log'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/log', 'token=' . $this->session->data['token'] . '&file=', 'SSL'));
 		$this->data['vqmod_log_download'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/download', 'token=' . $this->session->data['token'] . '&file=', 'SSL'));
-		$this->data['vqmod_restart'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/editor', 'token=' . $this->session->data['token'] . ($file ? '&file=' . $file : ''), 'SSL'));
+		$this->data['vqmod_editor'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/editor', 'token=' . $this->session->data['token'] . ($file ? '&file=' . $file : ''), 'SSL'));
 		$this->data['autocomplete'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/autocomplete', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['upload'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/uploadtoxml', 'token=' . $this->session->data['token'], 'SSL'));
-		$this->data['generate'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/editor', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['loading_image'] = "view/image/loading.png";
 		$this->data['saved_image'] = "view/image/saved.png";
 		$log_file = $this->config->get('log_file');
@@ -598,7 +629,7 @@ class ControllerToolVqmod extends Controller {
 				$filename = $this->request->get['file'];
 				if ($filename == 'log') {
 					$filename = $this->config->get('config_error_filename');
-					$file = DIR_SYSTEM . 'logs/' . $filename;
+					$file = DIR_LOGS . $filename;
 					$type = 'text/plain';
 				} elseif (substr($filename, -4) == '.log') {
 					$file = $this->config->get('log_file') . $filename;
@@ -608,7 +639,7 @@ class ControllerToolVqmod extends Controller {
 					$file = $this->config->get('log_file');
 					$type = 'text/plain';
 				} else {
-					$file = (substr($filename,-4) == '.bak' ? $this->config->get('vqm_backup') : $this->config->get('vqm_xml')) . $filename;
+					$file = (substr($filename,-4) == '.bak' ? $this->config->get('vqm_backup') : $this->model_tool_vqmod->xml) . $filename;
 					$type = 'text/xml';
 				}
 				if (substr($file, -1) == '_') $filename = substr($filename, 0, -1);
@@ -690,10 +721,12 @@ class ControllerToolVqmod extends Controller {
 
   	public function log() {
 		$this->load->language('tool/vqmod');
+		$this->load->model('tool/vqmod');
+
 		$log_file = (isset($this->request->get['file'])) ? $this->request->get['file'] : 'log';
 		$log_dir = $this->config->get('log_file');
 		if ($log_file == 'log') {
-			$log_file = DIR_SYSTEM . 'logs/' . $this->config->get('config_error_filename');
+			$log_file = DIR_LOGS . $this->config->get('config_error_filename');
 		} else {
 			if (file_exists($log_dir) && is_file($log_dir)) $log_file = $log_dir;
 			else $log_file = $log_dir . $log_file;
@@ -748,16 +781,11 @@ class ControllerToolVqmod extends Controller {
 	public function checkdir() {
 		$json = '';
 		$dir = (isset($this->request->get['dir'])) ? $this->request->get['dir'] : false;
-		$return = (isset($this->request->get['return'])) ? $this->request->get['return'] : 'exists';
 		if ($dir) {
-			$check = (isset($this->request->get['file'])) ? $this->request->get['file'] : false;
-			if ($return != 'exists') {
-				$this->load->language('tool/vqmod');
-				$return = ($check) ? sprintf($this->language->get($return), $check) : $this->language->get($return);
-			}
 			if (substr($dir, -1) == '/') $dir = substr($dir, 0, -1);
+			if (strpos($dir, $this->vqm) === false) $dir = $this->vqm . $dir;
 			if (file_exists($dir) && is_dir($dir)) {
-				if (!$check || file_exists($dir . '/' . $check)) $json = $return;
+				$json = 'exists';
 			}
 		}
 		$this->response->setOutput(json_encode($json));
@@ -779,7 +807,7 @@ class ControllerToolVqmod extends Controller {
 				$subfolder = SUBFOLDER;
 				$tests = '../../';
 			} else {
-				$tests = $this->config->get('vqm') . 'test/';
+				$tests = $this->model_tool_vqmod->vqm . 'test/';
 			}
 			if (file_exists($tests) && is_dir($tests)) {
 				$dirfiles = glob($tests . '*');
@@ -811,9 +839,9 @@ class ControllerToolVqmod extends Controller {
 		$root = filter_input(INPUT_SERVER, 'DOCUMENT_ROOT');
 		$json = '';
 		$versions = glob($root . '/*');
-		$splash = 'http://vqmoderator.googlecode.com/svn/trunk/oclocal/splash.png';
+		$splash = $this->model_tool_vqmod->vqmtrunk . 'oclocal/splash.png';
 		$splash = ($this->model_tool_vqmod->isRemoteFile($splash)) ? file_get_contents($splash) : false;
-		$index = 'http://vqmoderator.googlecode.com/svn/trunk/oclocal/index.php';
+		$index = $this->model_tool_vqmod->vqmtrunk . 'oclocal/index.php';
 		$index = ($this->model_tool_vqmod->isRemoteFile($index)) ? file_get_contents($index) : false;
 		if ($splash && $index) { // Got the takeover files
 			$moderate = array();
@@ -840,135 +868,55 @@ class ControllerToolVqmod extends Controller {
 					$this->model_tool_vqmod->delTree('../../' . $file . '/vqgen'); // Remove vQGen
 				}
 			}
-			if ($moderate) $json .= $this->getVQModerator($moderate); // Copy vQModerator to all installations
+			if ($moderate) {
+				if ($this->model_tool_vqmod->getVQModerator($moderate)) $json .= $this->language->get('text_success_takeover'); // Copy vQModerator to all installations
+			}
 		}
 		$this->session->data['success'] = $json;
 		$this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
 	}
 
-	public function vqinstall($install_vqmod = false) {
+	public function vqinstall() {
 		$this->load->language('tool/vqmod');
 		$this->load->model('tool/vqmod');
-		$admin = basename(DIR_APPLICATION);
+		// (Re-)Load current vQMod version
+		if (class_exists('VQMod')) $this->model_tool_vqmod->vqmver = VQMod::$_vqversion;
 		$json = '';
-		$success = true;
-		if (isset($this->request->get['vqmod'])) $install_vqmod = $this->request->get['vqmod'];
-		if ($install_vqmod && $install_vqmod != 'xist') {
-			$trunk = $this->config->get('vqm_trunk');
-			if (!$trunk) $trunk = 'http://vqmod.googlecode.com/svn/trunk/';
-			if (substr($trunk,0,7) !== 'http://') $trunk = 'http://' . $trunk;
-			$vqm_opencart = $this->config->get('vqm_opcrt');
-			if (!$vqm_opencart) $vqm_opencart = 'platforms/opencart/';
-			$files = array(
-				'vqmod/vqmod.php' => 'vqmod/vqmod.php',
-				'vqmod/install/ugrsr.class.php' => 'vqmod/install/ugrsr.class.php',
-				'vqmod/install/index.php' => $vqm_opencart . 'install/index.php',
-				'vqmod/xml/vqmod_opencart.xml' => $vqm_opencart . 'xml/vqmod_opencart.xml',
-			);
-			foreach ($files as $local => $remote) {
-				$remote = $trunk . $remote;
-				if ($this->model_tool_vqmod->isRemoteFile($remote)) {
-					$data = file_get_contents($remote);
-					// Get the newly installed vqmod version
-					if ($local == 'vqmod/vqmod.php') $version = $this->getVersion($data);
-					// Set the admin folder in vQMod Install file
-					if ($local == 'vqmod/install/index.php') $data = str_replace("= 'admin';", "= '$admin';", $data);
-					if ($success) $success = $this->model_tool_vqmod->createFile('../' . $local, $data, 'text', 0755);
-				} else {
-					$success = false;
-				}
-			}
-		} else {
-			$success = false;
-		}
-		if (!$success) {
-			// Search the currently installed vqmod version
-			if (file_exists('../vqmod/vqmod.php')) {
-				$data = file_get_contents('../vqmod/vqmod.php');
-				$version = $this->getVersion($data);
-				if ($version) $success = true;
-			}
-		}
-		// We should now have the installed vQMod Version
-		if ($success && $version) {
-			$re = '';
-			if (file_exists('../vqmod/xml/vQModerator.xml')) {
-				$this->model_tool_vqmod->deleteFile('../vqmod/xml/vQModerator.xml');
-				$re = 'Re-';
-			}
-			$json = $this->getVQModerator();
-			if ($json) {
-				$this->model_tool_vqmod->installvQModerator($version);
-				$json .= sprintf($this->language->get('text_success_instal'), $re);
-			}
 
-			if ($install_vqmod) {
-				$json .= $this->language->get('text_success_install');
-				// Set and Save permissions
-				$chmods = array(
-					'../index.php' => $this->model_tool_vqmod->setPermission('../index.php', 0755),
-					'../' . $admin => $this->model_tool_vqmod->setPermission('../' . $admin, 0755),
-					'./index.php' => $this->model_tool_vqmod->setPermission('./index.php', 0755)
-				);
-				$json .= file_get_contents(HTTP_CATALOG . str_replace('../', '', $this->config->get('vqm')) . 'install/index.php');
-				if (strpos($json, 'INSTALLED') === false && strpos($json, 'UPGRADE COMPLETE') === false) {
-					$json .= $this->language->get('text_failed_instal');
-					$json .= file_get_contents(HTTP_CATALOG . str_replace('../', '', $this->config->get('vqm')) . 'install/index.php');
-					if (strpos($json, 'INSTALLED') === false) $json .= $this->language->get('text_failed_install');
-					else $json .= $this->language->get('text_success_afterall');
-				}
-				if (strpos($json, 'INSTALLED') !== false || strpos($json, 'UPGRADE COMPLETE') !== false) {
-					$json .= sprintf($this->language->get('text_going_reload'), $this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
-				}
-				// Restore Saved permissions
-				foreach ($chmods as $file => $chmod) $this->model_tool_vqmod->setPermission($file, $chmod);
+
+		if (isset($this->request->get['vq']) && $this->request->get['vq']) {
+			if ($this->model_tool_vqmod->getVQMod()) $json['success'] = $this->language->get('success_download_vqmod');
+			else $json['error'] = $this->language->get('error_download_vqmod');
+		} elseif (isset($this->request->get['govq']) && $this->request->get['govq']) {
+			$done = $this->model_tool_vqmod->installVQMod();
+			if ($done && strpos($done, 'INSTALLED') !== false) {
+				$json['success'] = $this->language->get('success_install_vqmod');
+			} elseif ($done && strpos($done, 'UPGRADE COMPLETE') !== false) {
+				$json['success'] = $this->language->get('success_update_vqmod');
 			} else {
-				$json .= sprintf($this->language->get('text_going_reload'), $this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
+				$json['error'] = (isset($this->request->get['try'])) ? $this->language->get('error_install_vqmod1') : $this->language->get('error_install_vqmod2');
 			}
-		} else {
-			$json .= $this->language->get('text_failed_installl');
+		} elseif (isset($this->request->get['vqm']) && $this->request->get['vqm']) {
+			$success = $this->model_tool_vqmod->getVQModerator();
+			if ($success === true) $json['success'] = sprintf($this->language->get('success_download_vqmoder'), $this->url->link('tool/vqmod', 'installing=1&token=' . $this->session->data['token'], 'SSL'));
+			elseif ($success) $json['success'] = $this->language->get('error_newest_vqmoder');
+			else $json['error'] = $this->language->get('error_download_vqmoder');
+		} elseif (isset($this->request->get['govqm']) && $this->request->get['govqm']) {
+			$this->model_tool_vqmod->deleteFile(DIR_CACHE . 'cache.vqmoderator');
+			$this->model_tool_vqmod->deleteAll('cache');
+			$re = false;
+			if (file_exists($this->model_tool_vqmod->xml . 'vQModerator.xml')) {
+				$this->model_tool_vqmod->deleteFile($this->model_tool_vqmod->xml . 'vQModerator.xml');
+				$re = true;
+			}
+			if ($this->model_tool_vqmod->installVQModerator()) {
+				$json['success'] = (!$re ? $this->language->get('success_install_vqmoder1') : $this->language->get('success_install_vqmoder2')) . sprintf($this->language->get('success_reload'), $this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
+			} else {
+				$json['error'] = $this->language->get('error_install_vqmoder');
+			}
 		}
 
-		$this->response->setOutput($json);
-	}
-	private function getVQModerator($dirs = array('../')) {
-		$success = true;
-		$json = '';
-		// Get repository vQModerator version
-		$modver = 'http://vqmoderator.googlecode.com/svn/trunk/version';
-		$modver = ($this->model_tool_vqmod->isRemoteFile($modver)) ? file_get_contents($modver) : 0;
-		if ($modver) {
-			$modver = preg_split("/\r\n|\n|\r/", $modver);
-			$modver = trim($modver[0]); // Version is first line (rest is changelog)
-		}
-		if ((int)str_replace('.', '', $modver) >= (int)str_replace('.', '', $this->model_tool_vqmod->version)) {
-			$this->model_tool_vqmod->version = $modver;
-			// Get vQModerator from Repository
-			$files = 'http://vqmoderator.googlecode.com/svn/trunk/files';
-			$files = ($this->model_tool_vqmod->isRemoteFile($files)) ? file_get_contents($files) : '';
-			$files = preg_split("/\r\n|\n|\r/", $files);
-			foreach ($files as $file) {
-				$file = trim($file);
-				$remote = 'http://vqmoderator.googlecode.com/svn/trunk/' . $file;
-				if ($file && $this->model_tool_vqmod->isRemoteFile($remote)) {
-					$data = file_get_contents($remote);
-					foreach ($dirs as $dir) {
-						if ($success) $success = $this->model_tool_vqmod->createFile($dir . $file, $data, 'text', 0755);
-					}
-				} else {
-					$success = false;
-				}
-			}
-			if ($success) $json .= ($dir !== '../') ? $this->language->get('text_success_takeover') : $this->language->get('text_success_installl');
-		}
-		return $json;
-	}
-	private function getVersion($data) {
-		if (!$data || strpos($data, '$_vqversion') === false) return false;
-		$version = explode('$_vqversion', $data, 2);
-		$version = explode("';", $version[1], 2);
-		$version = trim(str_replace("'", '', str_replace('=', '', $version[0])));
-		return $version;
+		$this->response->setOutput(json_encode($json));
 	}
 
 	private function validate() {

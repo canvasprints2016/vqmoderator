@@ -1,3 +1,10 @@
+1.1.1
+- Totally overhauled the installation/update procedure
+- Removed vQMod folder settings (no longer needed)
+- Fixed: Renaming a file would create a new one
+- Fixed: Autocomplete added a slash when entering multiple files
+- Fixed: Changed editor arrow color (more visible)
+- Some small bugfixes
 1.1.0
 - Added: Autocomplete and Search now support multiple wildcards (*)
 - Added: File/Path fields auto-correct wrong slashes

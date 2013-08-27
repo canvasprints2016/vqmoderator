@@ -1,19 +1,26 @@
 <?php
 class ModelToolVqmod extends Model {
-	public $version = '1.1.0';
-	public $vqmver = '';
+	public $version = '1.1.1';
+	public $vqmver = 0;
+	public $vqm = '../vqmod/';
+	public $xml = '../vqmod/xml/';
+	public $vqtrunk = 'http://vqmod.googlecode.com/svn/trunk/';
+	public $vqtags = 'http://vqmod.googlecode.com/svn/tags/';
+	public $vqopcrt = 'platforms/opencart/';
+	public $vqmtrunk = 'http://vqmoderator.googlecode.com/svn/trunk/';
 
 	public function getFiles() {
 		$files = array();
 		$error = $message = array();
+		$vqm_backup = $this->config->get('vqm_backup');
 		$use_errors = libxml_use_internal_errors(true); // Save error setting
-		$dirfiles = glob($this->config->get('vqm_xml') . '*.xml*');
-		$bakfiles = glob($this->config->get('vqm_backup') . '*.xml*');
+		$dirfiles = glob($this->xml . '*.xml*');
+		$bakfiles = glob($vqm_backup . '*.xml*');
 		$dirfiles = array_merge($dirfiles, $bakfiles);
 		foreach ($dirfiles as $path) {
 			$status = true;
 			$action = array();
-			$file = $filename = str_replace($this->config->get('vqm_xml'), '', str_replace($this->config->get('vqm_backup'), '', $path));
+			$file = $filename = str_replace($this->xml, '', str_replace($vqm_backup, '', $path));
 			if ($file != 'vqmod_opencart.xml') {
 				$newfiles = '';
 				$xml = simplexml_load_file($path);
@@ -71,13 +78,13 @@ class ModelToolVqmod extends Model {
 
 				$backup = $install = '';
 				if (substr($file, -4) == '.bak') {
-					if ($this->config->get('vqm_backup') && dirname($path) . '/' != $this->config->get('vqm_backup')) {
-						if (!file_exists($this->config->get('vqm_backup'))) $this->createFile($this->config->get('vqm_backup') . 'temp.tmp');
-						$this->deleteFile($this->config->get('vqm_backup') . 'temp.tmp');
-						$moved = $this->renameFile($path, $this->config->get('vqm_backup') . $file);
+					if ($vqm_backup && dirname($path) . '/' != $vqm_backup) {
+						if (!file_exists($vqm_backup)) $this->createFile($vqm_backup . 'temp.tmp');
+						$this->deleteFile($vqm_backup . 'temp.tmp');
+						$moved = $this->renameFile($path, $vqm_backup . $file);
 						if ($moved) {
 							$message[] = sprintf($this->language->get('text_moved_backup'), $file);
-							$path = $this->config->get('vqm_backup') . $file;
+							$path = $vqm_backup . $file;
 						} else {
 							$error[] = sprintf($this->language->get('error_moving_backup'), $file);
 						}
@@ -188,7 +195,7 @@ class ModelToolVqmod extends Model {
 			'author' => ''
 		);
 		$use_errors = libxml_use_internal_errors(true); // Save error setting
-		$xml_file = ($file && file_exists($this->config->get('vqm_xml') . $file)) ? $this->config->get('vqm_xml') . $file : $this->config->get('vqm_backup') . $file;
+		$xml_file = ($file && file_exists($this->xml . $file)) ? $this->xml . $file : $this->config->get('vqm_backup') . $file;
 		if ($file && file_exists($xml_file)) {
 			$xmll = simplexml_load_file($xml_file);
 			// XML Error handling
@@ -223,8 +230,8 @@ class ModelToolVqmod extends Model {
 		if (!$dir) return false;
 		if ($dir == 'cache') {
 			$dir = $this->config->get('vqm_cache');
-			if (file_exists($this->config->get('vqm') . 'mods.cache')) {
-				@unlink($this->config->get('vqm') . 'mods.cache');
+			if (file_exists($this->vqm . 'mods.cache')) {
+				@unlink($this->vqm . 'mods.cache');
 			}
 		}
 		if (file_exists($dir) && is_dir($dir)) {
@@ -359,9 +366,9 @@ class ModelToolVqmod extends Model {
 	public function disableallFiles() {
 		$success = true;
 		$clearcache = false;
-		$dirfiles = glob($this->config->get('vqm_xml') . '*.xml');
+		$dirfiles = glob($this->xml . '*.xml');
 		foreach ($dirfiles as $path) {
-			if ($path != $this->config->get('vqm_xml') . 'vqmod_opencart.xml') {
+			if ($path != $this->xml . 'vqmod_opencart.xml') {
 				if (!$this->disableFile($path)) $success = false;
 				else $clearcache = true;
 			}
@@ -374,7 +381,7 @@ class ModelToolVqmod extends Model {
 	public function enableallFiles() {
 		$success = true;
 		$clearcache = false;
-		$dirfiles = glob($this->config->get('vqm_xml') . '*.xml_');
+		$dirfiles = glob($this->xml . '*.xml_');
 		foreach ($dirfiles as $path) {
 			if (!$this->enableFile($path)) $success = false;
 			else $clearcache = true;
@@ -399,15 +406,17 @@ class ModelToolVqmod extends Model {
 				if (!$reset[$path]) return false;
 			}
 		}
-		$perms = $this->setPermission($file);
-		if (!file_exists($file) || $overwrite) {
-			$fh = fopen($file, 'w');
-			if (!$fh) return false;
-			if ($mime != 'text') $data = base64_decode($data);
-			fwrite($fh, $data);
-			fclose($fh);
+		if ($file) {
+			$perms = $this->setPermission($file);
+			if (!file_exists($file) || $overwrite) {
+				$fh = fopen($file, 'w');
+				if (!$fh) return false;
+				if ($mime != 'text') $data = base64_decode($data);
+				fwrite($fh, $data);
+				fclose($fh);
+			}
+			if ($perms) $this->setPermission($file, $perms);
 		}
-		if ($perms) $this->setPermission($file, $perms);
 		foreach ($reset as $path => $perms) {
 			if ($perms) $this->setPermission($path, $perms);
 		}
@@ -417,6 +426,7 @@ class ModelToolVqmod extends Model {
 
 	public function renameFile($old, $new) {
 		if (file_exists($old)) {
+			if (!file_exists($new)) $this->createFile($new);
 			$time = filemtime($old);
 			if (rename($old, $new)) { // Rename orinal
 				if ($time) touch($new, $time); // Set Original Modification time back
@@ -462,8 +472,9 @@ class ModelToolVqmod extends Model {
 		}
 		$treefile = explode('/', $file);
 		array_pop($treefile);
-		$treefile = $multi . implode('/', $treefile);
+		$treefile = implode('/', $treefile);
 		if ($treefile) $treefile .= '/';
+		$treefile = $multi . $treefile;
 		if (substr($file, -1) != '*') $file .= '*';
 		$treefiles = glob($path . $file);
 		foreach ($treefiles as $file) {
@@ -542,141 +553,59 @@ class ModelToolVqmod extends Model {
 		return $clean;
 	}
 
-	// settings does 3 things: Save settings, Load & save default settings (first install), and Get saved settings.
-	public function settings($data = array()) {
+	// settings does 3 things: Save settings ($data = array), Get settings (!$data), and Save first Install (!$data && !$settings)
+	public function settings($posted = array()) {
 		$this->load->model('setting/setting');
-		if (!is_array($data)) {
-			$type = $data;
+		$create = true;
+		if (!$posted || !is_array($posted)) {
 			$data = $this->model_setting_setting->getSetting('vqmod');
-			$vqm = str_replace('/', '\/', $data['vqm']);
-			$sorted = array(
-				'vqm' => $data['vqm'],
-				'vqm_xml' => preg_replace("/$vqm/", '', $data['vqm_xml'], 1),
-				'vqm_cache' => preg_replace("/$vqm/", '', $data['vqm_cache'], 1),
-				'log_file' => preg_replace("/$vqm/", '', $data['log_file'], 1),
-				'log_size' => $data['log_size'],
-				'vqm_trunk' => (isset($data['vqm_trunk']) ? $data['vqm_trunk'] : 'http://vqmod.googlecode.com/svn/trunk/'),
-				'vqm_opcrt' => (isset($data['vqm_opcrt']) ? $data['vqm_opcrt'] : 'platforms/opencart/'),
-				'vqm_create' => (isset($data['vqm_create']) ? $data['vqm_create'] : 1),
-				'vqm_backup' => (isset($data['vqm_backup']) ? preg_replace("/$vqm/", '', $data['vqm_backup'], 1) : 'backups/'),
-				'vqm_backups' => (isset($data['vqm_backups']) ? $data['vqm_backups'] : 3),
-				'text_height' => $data['text_height'],
-				'text_style' => $data['text_style'],
-				'show_trim' => (isset($data['show_trim']) ? $data['show_trim'] : 1),
-				'show_regex' => (isset($data['show_regex']) ? $data['show_regex'] : 1),
-				'show_info' => (isset($data['show_info']) ? $data['show_info'] : 1),
-				'search_delay' => (isset($data['search_delay']) ? $data['search_delay'] : 800),
-				'generate_html' => $data['generate_html'],
-				'manual_css' => $data['manual_css']
-			);
-			if ($type == 'check') {
-				// Only save vqm_backup when user saves settings
-				if (!isset($data['vqm_backup'])) unset($sorted['vqm_backup']);
-				// Only save show_trim when user saves settings
-				if (!isset($data['show_trim'])) unset($sorted['show_trim']);
-				$cache = DIR_CACHE . 'cache.vqmoderator';
-				if (!file_exists($cache) && touch($cache)) {
-					chmod($cache, 0777);
-				} elseif (file_exists($cache) && is_readable($cache) && is_writable($cache)) {
-					if (filemtime($cache) > strtotime('-24 Hours')) {
-						$versions = file_get_contents($cache);
-						$versions = explode(';', $versions);
-						$version = array_shift($versions);
-						if (!$version || !$versions) {
-							unset($versions);
-						} else {
-							$versions = implode(';', $versions); // implode in case Changelog contains ";"
-							$versions = array($version, $versions);
-						}
-					}
-				} else {
-					$cache = false;
-				}
-				// Get the vqmod version from repository
-				if (!isset($versions)) {
-					$versions = array();
-					$file = $data['vqm_trunk'] . 'vqmod/vqmod.php';
-					if ($this->isRemoteFile($file)) {
-						$data = file_get_contents($file);
-						$version = explode('$_vqversion', $data, 2);
-						$version = explode("';", $version[1], 2);
-						$version = trim(str_replace("'", '', str_replace('=', '', $version[0])));
-					}
-					if ($version) {
-						$versions[0] = $version;
-						// Get vQModerator version from repository
-						$file = 'http://vqmoderator.googlecode.com/svn/trunk/version';
-						if ($this->isRemoteFile($file)) {
-							$version = file_get_contents($file);
-							if ($version) $versions[1] = $version;
-						}
-					}
-					if ($cache && isset($versions[1])) file_put_contents($cache, implode(';', $versions));
-				}
-				if (!isset($versions[0])) $versions[0] = 0;
-				if (!isset($versions[1])) $versions[1] = '0:';
-				$sorted['versions'] = $versions;
-			}
-			return $sorted;
 		} else {
-			$installed = true;
-			if (!$data) {
-				$data['vqm'] = '../vqmod/';
-				// Search the vqmod dir
-				if (file_exists('../vqmod/vqmod.php')) {
-					$dirfiles = glob($data['vqm'] . '*');
-					foreach ($dirfiles as $path) {
-						if (strpos($path, 'cache') !== false && is_dir($path)) $data['vqm_cache'] = $path . '/';
-						elseif (strpos($path, 'xml') !== false && is_dir($path)) $data['vqm_xml'] = $path . '/';
-					}
-				}
-				if (!isset($data['vqm_xml'])) $data['vqm_xml'] = $data['vqm'] . 'xml/';
-				if (!isset($data['vqm_cache'])) $data['vqm_cache'] = $data['vqm'] . 'vqcache/';
-				if (!isset($data['log_file'])) $data['log_file'] = $data['vqm'] . 'logs/';
-				$installed = false;
-			} else {
-				// POSTed data (or previously saved data)
-				if (!isset($data['vqm'])) $data['vqm'] = '../vqmod/';
-				$data['vqm_xml'] = $data['vqm'] . $data['vqm_xml'];
-				if (isset($data['vqm_backup'])) $data['vqm_backup'] = $data['vqm'] . $data['vqm_backup'];
-				$data['vqm_cache'] = $data['vqm'] . $data['vqm_cache'];
-				$data['log_file'] = $data['vqm'] . $data['log_file'];
-			}
-			if (!isset($data['log_size'])) {
-				$val = trim(ini_get('post_max_size'));
-				$multiply = strtolower($val[strlen($val)-1]);
-				switch($multiply) {
-					case 'g':
-						$val *= 1024;
-					case 'm':
-						$val *= 1024;
-					case 'k':
-						$val *= 1024;
-				}
-				$data['log_size'] = round($val / 1048576);
-			}
-			// Create vqcache folder (also checking create/delete compatibility)
-			$create = $this->createFile($data['vqm_cache'] . 'temp.tmp', 'Temp File... Delete!!!');
-			if ($create) $create = $this->deleteFile($data['vqm_cache'] . 'temp.tmp');
-			if (!isset($data['vqm_trunk'])) $data['vqm_trunk'] = 'http://vqmod.googlecode.com/svn/trunk/';
-			if (!isset($data['vqm_opcrt'])) $data['vqm_opcrt'] = 'platforms/opencart/';
-			if (!isset($data['vqm_create']) || !$create) $data['vqm_create'] = ($create) ? 1 : 0;
-			if (!isset($data['vqm_backup']) && $installed) $data['vqm_backup'] = $data['vqm'] . 'backups/'; // Only save trim when user saves settings
-			if (!isset($data['vqm_backups'])) $data['vqm_backups'] = 3;
-			if (!isset($data['text_height'])) $data['text_height'] = 250;
-			if (!isset($data['text_style'])) $data['text_style'] = 1;
-			if (!isset($data['show_trim']) && $installed) $data['show_trim'] = 1; // Only save trim when user saves settings
-			if (!isset($data['show_regex'])) $data['show_regex'] = 1;
-			if (!isset($data['show_info'])) $data['show_info'] = 1;
-			if (!isset($data['search_delay'])) $data['search_delay'] = 800;
-			if (!isset($data['generate_html'])) $data['generate_html'] = 0;
-			if (!isset($data['manual_css'])) $data['manual_css'] = $this->getManualCss();
-
-			foreach ($data as $key => $val) $this->config->set($key, $val);
-			$this->model_setting_setting->editSetting('vqmod', $data);
+			// POSTed data (or previously saved data)
+			$data = $posted;
 		}
+		if (!isset($data['log_size'])) {
+			$val = trim(ini_get('post_max_size'));
+			$multiply = strtolower($val[strlen($val)-1]);
+			switch($multiply) {
+				case 'g':
+					$val *= 1024;
+				case 'm':
+					$val *= 1024;
+				case 'k':
+					$val *= 1024;
+			}
+			$data['log_size'] = round($val / 1048576);
+		}
+		// Remove dirs from vqm_backup, and add vqmod dir (so it's always one folder deep)
+		$data['vqm_backup'] = $this->vqm . (isset($data['vqm_backup']) ? str_replace(array($this->vqm, '/', '.'), '', $data['vqm_backup']) . '/' : 'backups/');
+		$sorted = array(
+			'update' => (isset($data['update']) ? $data['update'] : 24),
+			'vqm_cache' => (isset($data['vqm_cache']) ? $data['vqm_cache'] : $this->vqm . 'vqcache/'),
+			'log_file' => (isset($data['log_file']) ? $data['log_file'] : $this->vqm . 'logs/'),
+			'log_size' => $data['log_size'],
+			'vqm_create' => (isset($data['vqm_create']) ? $data['vqm_create'] : 1),
+			'vqm_backup' => $data['vqm_backup'],
+			'vqm_backups' => (isset($data['vqm_backups']) ? $data['vqm_backups'] : 3),
+			'text_height' => (isset($data['text_height']) ? $data['text_height'] : 250),
+			'text_style' => (isset($data['text_style']) ? $data['text_style'] : 1),
+			'show_trim' => (isset($data['show_trim']) ? $data['show_trim'] : 1),
+			'show_regex' => (isset($data['show_regex']) ? $data['show_regex'] : 1),
+			'show_info' => (isset($data['show_info']) ? $data['show_info'] : 1),
+			'search_delay' => (isset($data['search_delay']) ? $data['search_delay'] : 800),
+			'generate_html' => (isset($data['generate_html']) ? $data['generate_html'] : 0),
+			'manual_css' => (isset($data['manual_css']) && $data['manual_css'] ? $data['manual_css'] : $this->getManualCss())
+		);
+		// Save settings if POSTed, or if show_trim is not set (first install)
+		if ($posted || $this->config->get('show_trim') === null) {
+			$sorted['vqm_backup'] = $this->vqm . $sorted['vqm_backup'];
+			foreach ($sorted as $key => $val) $this->config->set($key, $val);
+			$this->model_setting_setting->editSetting('vqmod', $sorted);
+		}
+		return $sorted;
 	}
+
 	public function isRemoteFile($url) {
+		if (strpos($url, '../../') === 0) return true; // Return true if it's a relative local path (testing)
 		$check = curl_init($url);
 
 		curl_setopt($check, CURLOPT_NOBODY, true);
@@ -714,7 +643,7 @@ class ModelToolVqmod extends Model {
 		$txt[] = str_repeat(PHP_EOL, 2);
 
 		$logPath = $this->config->get('log_file');
-		if (substr($logPath,-4,1) == '.' && !file_exists($logPath)) {
+		if (substr($logPath, -4) == '.log' && !file_exists($logPath)) {
 			$res = file_put_contents($logPath, '');
 			if ($res === false) {
 				die('COULD NOT WRITE TO LOG FILE');
@@ -730,7 +659,7 @@ class ModelToolVqmod extends Model {
 		$files = array();
 		$error = $message = array();
 		$use_errors = libxml_use_internal_errors(true); // Save error setting
-		$xml_dir = $this->config->get('vqm_xml');
+		$xml_dir = $this->xml;
 		$dirfiles = glob($xml_dir . '*.xml');
 		foreach ($dirfiles as $path) {
 			$file = str_replace($xml_dir, '', $path);
@@ -770,7 +699,7 @@ class ModelToolVqmod extends Model {
 			if (defined('SUBFOLDER') && defined('LOCALPATH')) {
 				$tests = '../../';
 			} else {
-				$tests = $this->config->get('vqm') . 'test/';
+				$tests = $this->vqm . 'test/';
 			}
 			//$VQMod = new VQMod();
 			foreach ($files as $file) {
@@ -940,7 +869,7 @@ class ModelToolVqmod extends Model {
 		$output .= "\n</modification>";
 
 		$file = $this->cleanText($data['filename']);
-		$dir = $this->config->get('vqm_xml');
+		$dir = $this->xml;
 		$bdir = $this->config->get('vqm_backup');
 		if ($manual && $data['generatexml']) {
 			if ($newfiles) $manual .= "\t\t<div class=\"newfiles\">" . $this->language->get('text_add_newfiles') . "</div>\n";
@@ -970,7 +899,7 @@ class ModelToolVqmod extends Model {
 				$rename = $data['oldfile']; // Rename orinal to .bak
 			}
 			if ($rename) {
-				$backups = (int)$this->config->get('vqm_backups');
+				$backups = (int)$this->config->get('vqm_backup');
 				if (file_exists($bdir . $file . '.bak') && $backups > 1) {
 					// Rename backup files from high to low
 					for ($i = $backups - 1; $i >= 1; $i--) {
@@ -1118,26 +1047,148 @@ class ModelToolVqmod extends Model {
 		return $style;
 	}
 
-	public function installvQModerator($version) {
+	public function getVersions() {
+		$update_time = ($this->config->get('update') === null) ? 24 : $this->config->get('update');
+		if (!$update_time) return array('vq' => $this->vqmver, 'vqm' => $this->version, 'changelog' => '');
+		$cache = DIR_CACHE . 'cache.vqmoderator';
+		if (!file_exists($cache) && touch($cache)) {
+			chmod($cache, 0777);
+		} elseif (file_exists($cache) && is_readable($cache) && is_writable($cache)) {
+			if (filemtime($cache) > strtotime('-' . $update_time . ' Hours')) {
+				$version = file_get_contents($cache);
+				$version = (substr($version,1,1) != '.') ? unserialize($version) : false;
+				if (is_array($version) && isset($version['vqm'])) {
+					$versions = $version;
+				}
+			}
+		} else {
+			$cache = false;
+		}
+		// Get the vqmod version from repository
+		if (!isset($versions)) {
+			$versions = array();
+			$file = $this->vqtrunk . 'vqmod/vqmod.php';
+			if ($this->isRemoteFile($file)) {
+				$data = file_get_contents($file);
+				$version = explode('$_vqversion', $data, 2);
+				$version = explode("';", $version[1], 2);
+				$version = trim(str_replace("'", '', str_replace('=', '', $version[0])));
+			}
+			if (isset($version) && $version) {
+				$versions = array('vq' => $version);
+				// Get vQModerator version from repository
+				$file = $this->vqmtrunk . 'version';
+				if ($this->isRemoteFile($file)) {
+					$version = file_get_contents($file);
+					if ($version) {
+						$versions['changelog'] = '';
+						$version = preg_split("/\r\n|\n|\r/", $version);
+						$versions['vqm'] = trim($version[0]);
+						$this_ver = (int)str_replace('.', '', $this->version);
+						foreach ($version as $i => $ver) {
+							if (strlen(trim($ver)) == 5 && substr_count($ver, '.') == 2) {
+								$vqmr_ver = (int)str_replace('.', '', trim($ver));
+								if ($vqmr_ver <= $this_ver) break;
+								$ver = ($i ? '<br/>' : '') . '<b>' . $ver . '</b>';
+							}
+							$versions['changelog'] .= $ver . '<br/>';
+						}
+					}
+				}
+			}
+		}
+		// Save versions to cache if we got both of them
+		if ($cache && isset($versions['vqm'])) {
+			file_put_contents($cache, serialize($versions));
+		} elseif (!$versions || !isset($versions['vqm'])) {
+			$versions = array('vq' => $this->vqmver, 'vqm' => $this->version, 'changelog' => '');
+		}
+		return $versions;
+	}
+
+	public function getVQMod() {
+		$admin = basename(DIR_APPLICATION);
+		$vqmod = str_replace('../', '', $this->vqm);
+		$success = true;
+		$files = array(
+			$vqmod . 'vqmod.php' => 'vqmod/vqmod.php',
+			$vqmod . 'install/ugrsr.class.php' => 'vqmod/install/ugrsr.class.php',
+			$vqmod . 'install/index.php' => $this->vqopcrt . 'install/index.php',
+			$vqmod . 'xml/vqmod_opencart.xml' => $this->vqopcrt . 'xml/vqmod_opencart.xml',
+		);
+		foreach ($files as $local => $remote) {
+			$remote = $this->vqtrunk . $remote;
+			if ($this->isRemoteFile($remote)) {
+				$data = file_get_contents($remote);
+				// Set the admin folder in vQMod Install file
+				if ($local == $vqmod . 'install/index.php' && $admin != 'admin') $data = str_replace("= 'admin';", "= '$admin';", $data);
+				if ($success) $success = $this->createFile('../' . $local, $data, 'text', 0755);
+			} else {
+				$success = false;
+			}
+		}
+		return $success;
+	}
+
+	public function installVQMod() {
+		if (!file_exists($this->vqm . 'install/index.php')) return false;
+		// Set and Save permissions
+		$admin = basename(DIR_APPLICATION);
+		$chmods = array(
+			'../index.php' => $this->setPermission('../index.php', 0755),
+			'../' . $admin => $this->setPermission('../' . $admin, 0755),
+			'./index.php' => $this->setPermission('./index.php', 0755)
+		);
+		$response = file_get_contents(HTTP_CATALOG . str_replace('../', '', $this->vqm) . 'install/index.php');
+
+		// Restore Saved permissions
+		foreach ($chmods as $file => $chmod) $this->setPermission($file, $chmod);
+
+		return $response;
+	}
+
+	public function getVQModerator($dirs = array('../')) {
+		$success = true;
+		// Get repository vQModerator version
+		$modver = $this->vqmtrunk . 'version';
+		$modver = ($this->isRemoteFile($modver)) ? file_get_contents($modver) : 0;
+		if ($modver) {
+			$modver = preg_split("/\r\n|\n|\r/", $modver);
+			$modver = trim($modver[0]); // Version is first line (rest is changelog)
+		}
+		if ((int)str_replace('.', '', $modver) < (int)str_replace('.', '', $this->version)) {
+			$success = 'warning';
+		} else {
+			$this->version = $modver;
+			// Get vQModerator from Repository
+			$files = $this->vqmtrunk . 'files';
+			$files = ($this->isRemoteFile($files)) ? file_get_contents($files) : '';
+			$files = preg_split("/\r\n|\n|\r/", $files);
+			foreach ($files as $file) {
+				$file = trim($file);
+				$remote = $this->vqmtrunk . $file;
+				if ($file && $this->isRemoteFile($remote)) {
+					$data = file_get_contents($remote);
+					foreach ($dirs as $dir) {
+						if ($success) $success = $this->createFile($dir . $file, $data, 'text', 0755);
+					}
+				} else {
+					$success = false;
+				}
+			}
+			if ($success) $this->deleteFile($this->xml . 'vQModerator.xml');
+		}
+		return $success;
+	}
+
+	public function installVQModerator() {
 		$admin = basename(DIR_APPLICATION);
 		$data = '<?xml version="1.0" encoding="UTF-8"?>
 <modification>
 	<id><![CDATA[vQModerator Installation]]></id>
 	<version><![CDATA[' . $this->version . ']]></version>
-	<vqmver><![CDATA[' . $version . ']]></vqmver>
+	<vqmver><![CDATA[' . $this->vqmver . ']]></vqmver>
 	<author><![CDATA[The Wizard of Osch, for www.CrystalCopy.nl]]></author>
-	<file name="' . $admin . '/controller/tool/vqmod.php" error="abort">
-		<operation info="This is automatically added by the installation script. It holds your installed vQMod version number.">
-			<search position="after" index="1"><![CDATA[public function index() {]]></search>
-			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQMod Version
-		$VQMODVER = "' . $version . '";]]></add>
-		</operation>
-		<operation info="This is automatically added by the installation script. It holds your installed vQMod version number.">
-			<search position="after" index="1"><![CDATA[public function editor() {]]></search>
-			<add><![CDATA[// BOF - Zappo - vQModerator - ONE LINE - Added vQMod Version
-		$VQMODVER = "' . $version . '";]]></add>
-		</operation>
-	</file>
 	<file name="' . $admin . '/controller/common/header.php" error="abort">
 		<operation info="Adding Link to vQModerator in Header">
 			<search position="after" index="1"><![CDATA[$this->data[\'text_zone\']]]></search>
@@ -1165,7 +1216,7 @@ $_[\'text_vqmoderator\']                       = \'vQModerator\';]]></add>
 		</operation>
 	</file>
 </modification>';
-		return $this->createFile('../vqmod/xml/vQModerator.xml', $data);
+		return $this->createFile($this->xml . 'vQModerator.xml', $data);
 	}
 }
 ?>
