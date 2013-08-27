@@ -17,15 +17,9 @@ $_['text_vqmod_config']		= 'vQModerator Settings';
 $_['text_vqmod_version']	= ' (You are @ vQMod v%s)';
 $_['text_update_found']		= 'Update found! v';
 $_['text_success']			= 'vQModerator Settings Saved!';
-$_['text_success_instal']	= 'Successfully %screated my own installation file: vQModerator.xml<br />';
-$_['text_success_install']	= 'Successfully got vQMod from googlecode.com repository! <br />Will now try to install... <br />vQMod Says: ';
-$_['text_success_installl']	= 'Successfully updated vQModerator from googlecode.com repository! <br />';
-$_['text_success_afterall']	= '<br />There you go!';
 $_['text_success_takeover']	= 'Successfully Copied vQModerator from googlecode.com repository to all OpenCart Local folders!<br/>You\'ll still have to set permissions and Install for each OpenCart!';
-$_['text_failed_instal']	= '<br />Hmmmm....... Let\'s try that again......<br />vQMod Says: ';
-$_['text_failed_install']	= '<br />No, sorry... Installation FAILED! (Probably can\'t set file permissions...)';
-$_['text_failed_installl']	= 'Could not get vQMod from googlecode.com repository! <br />Please check the repository URL!';
-$_['text_going_reload']		= '<br />Click <a href="%s">here</a> to reload!';
+$_['text_not_installed']	= 'Not Installed!';
+$_['text_no_updates']		= 'You are totally up-to-date!';
 $_['text_required']			= 'Required!';
 $_['text_delete']			= 'Successfully deleted file [%s]! (SUCCESS!)';
 $_['text_create']			= 'Successfully created file [%s]! (CREATED NEW)';
@@ -132,6 +126,7 @@ $_['text_search_not_found']	= 'File <b>not</b> found!!';
 $_['button_config']			= 'Settings';
 $_['button_update']			= 'Update vQModerator';
 $_['button_update_vqmod']	= 'Update vQMod';
+$_['button_update_check']	= 'Check for Updates';
 $_['button_log']			= 'vQMod Log';
 $_['button_log_clear']		= 'Clear Log';
 $_['button_log_delete']		= 'Delete Log';
@@ -153,15 +148,10 @@ $_['button_set_editor']		= 'XML Editor';
 $_['button_set_manual']		= 'HTML Manual';
 
 // Entry
-$_['entry_vqm']				= 'vQMod Location:';
-$_['entry_vqm_xml']			= 'vQMod XML Path:';
-$_['entry_vqm_backup']		= 'vQMods XML Backup Path:';
+$_['entry_update']			= 'Check Online vQMod<i>erator</i> Updates:<span class="help">Every <i>x</i> hours. (Set to <i>0</i> to never check)</span>';
+$_['entry_vqm_backup']		= 'vQMods XML Backup Path:<span class="help">Set or change XML Backup folder</span>';
 $_['entry_vqm_backups']		= 'Number of Backups:';
-$_['entry_vqm_cache']		= 'vQMod Cache Path:';
-$_['entry_vqm_trunk']		= 'vQMod Online Repository:<span class="help"><b>Only change if you know what you\'re doing!</b><br/>Default: <i>http://vqmod.googlecode.com/svn/trunk/</i></span>';
-$_['entry_vqm_opcrt']		= 'Repository OpenCart files:<span class="help"><b>Only change if you know what you\'re doing!</b><br/>Default: <i>platforms/opencart/</i></span>';
-$_['entry_log_file']		= 'vQMod Log Files:<span class="help">Enter the log files location.</span>';
-$_['entry_log_size']		= 'vQMod Log Size:';
+$_['entry_log_size']		= 'vQMod Log Size:<span class="help">Max log size to display.</span>';
 $_['entry_vqm_create']		= 'Create Extension Files:';
 $_['entry_help_vqm_create']	= '<span class="help" style="display:inline;">Turn off if creating files does not work for you.</span>';
 $_['entry_manual_css']		= 'Generated Manual CSS:';
@@ -224,7 +214,6 @@ $_['entry_info']			= 'Info:<span class=\"help\">Information about this operation
 // Error
 $_['error_permission']		= 'Warning: You do not have permission to modify vQMods!';
 $_['error_settings']		= 'Warning: You have not setup vQModerator! Please <a href="#" class="vqmod-config" onclick="return false;">Edit your Settings</a>!';
-$_['error_installation']	= 'Warning: vQModerator not Fully installed! Please <a href="#" class="vqmod-config vqmr-update" onclick="return false;">Update vQModerator</a>!';
 $_['error_position_all']	= 'Warning: This file contains a "Search Replace All" tag!\nThis functionality is removed starting vQMod v2.4.0!\n\nPlease make sure you make the appropriate changes to this Operation!\nIt is marked in Red - (Fix before saving!!!)';
 $_['error_saving_xml']		= 'Warning: Error saving vQMod XML! Check folder permissions.';
 $_['error_upload']			= 'Error: Uploading Failed!';
@@ -244,9 +233,26 @@ $_['error_enable']			= 'Warning: Could not enable "%s"! (CHECK WRITE PERMISSIONS
 $_['error_enableall']		= 'Warning: Could not enable All vQMods!';
 $_['error_deleteall']		= 'Warning: Could not delete all selected files!';
 $_['error_add_operation']	= 'Please use the last operation marked to \"Remove on Generate\", if you wish to add a new operation!';
-$_['error_vqmod_install']	= 'Warning: vQMod found, but not installed! Click <a href="#" class="vqmod-install" id="install-xisting" onclick="return false;">here</a> to install vQMod.<br/>';
+$_['error_download_vqmod']	= 'Warning: Could not get vQMod from googlecode.com repository!';
+$_['error_download_vqmoder'] = 'Warning: Could not get vQModerator from googlecode.com repository!';
+$_['error_newest_vqmoder']  = 'Warning: Did not get vQModerator from googlecode.com repository!<br />Your version is higher than the online version!?!?';
+$_['success_download_vqmod'] = 'Successfully got vQMod from googlecode.com repository! <br />Will now try to install...';
+$_['success_download_vqmoder'] = 'Successfully got vQModerator from googlecode.com repository!<br/>Will now <a href="%s" id="redirect-me" data-time="4">reload</a> to continue installation...';
+$_['success_continue_vqmoder'] = 'Continuing vQModerator Installation...';
+$_['success_update_vqmod'] = 'Successfully Updated vQMod Installation!';
+$_['success_update_vqmoder'] = 'Successfully Updated vQModerator Installation!';
+$_['error_install_vqmod1']	= 'Hmmmm....... Let\'s try that again......';
+$_['error_install_vqmod2']	= 'No, sorry... Installation FAILED! (Probably can\'t set file permissions...)';
+$_['error_install_vqmoder']	= 'Something went wrong trying to create vQModerator.xml!<br/>vQModerator not installed!';
+$_['success_install_vqmod']	= 'Successfully installed vQMod!';
+$_['success_install_vqmoder1']	= 'Successfully created my own installation file: vQModerator.xml!';
+$_['success_install_vqmoder2']	= 'Successfully Re-created my own installation file: vQModerator.xml!';
+$_['success_reload']		= '<br />Click <a href="%s" id="redirect-me" data-time="10">here to reload</a>';
+$_['error_installation']	= 'Warning: vQModerator not Fully installed! Please <a href="#" class="vqmod-install vqmoderator" onclick="return false;">Update vQModerator</a>!';
+$_['error_vqmod_folders']	= 'Warning: vQMod installed, but something is wrong with the <a href="#" class="vqmod-config" onclick="return false;">folder settings</a>!<br/>Click <a href="#" class="vqmod-install" onclick="return false;">here</a> to re-install vQMod with the folder settings.<br/>';
+$_['error_vqmod_install']	= 'Warning: vQMod found, but not installed! Click <a href="#" class="vqmod-install" onclick="return false;">here</a> to update and install vQMod.<br/>';
 $_['error_vqmod_missing']	= '<ul><li>Could not find vQMod on your system!</li>
-	<li>Click <a href="#" class="vqmod-install" onclick="return false;" target="_blank">here</a> to Download and Install vQMod directly.</a></li>
+	<li>Click <a href="#" class="vqmod-install" onclick="return false;" target="_blank">here</a> to Download and Install vQMod directly.</li>
 	<li>For more information on vQMod (or manual install), visit <a href="http://www.vqmod.com/" target="_blank">www.vQmod.com</a></li></ul>';
 $_['error_log_clear']		= '
 	ERROR CLEARING LOG!
@@ -322,7 +328,7 @@ $_['text_log_load'] = '
                            C;;iCf
                           CCi;;lC
                         CCii;;;;;CC
-                      CCiiii;;;;::;CC           LOADIG....
+                      CCiiii;;;;::;CC           LOADING....
                      Cliitl;;;;;l:::,Cf
                    CClitl;;;;;;;;;l:,:fC
                   Clili::;;;;;;;;;;;l;,.C           PLEASE WAIT...

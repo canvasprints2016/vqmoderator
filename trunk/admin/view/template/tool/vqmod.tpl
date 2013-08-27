@@ -93,50 +93,50 @@
 	<textarea id="loadlog" style="display:none;"><?php echo $text_log_load;?></textarea>
 </div>
 <div id="vqmod-config" style="display:none;">
-    <?php foreach ($vqconfig as $vqname => $vqval) { ?>
-      <?php if ($vqname == 'vqm' || $vqname == 'vqm_create' || $vqname == 'generate_html') { ?>
-      <?php $edit_id = ($vqname == 'vqm') ? 'set-vqmod' : ($vqname == 'vqm_create' ? 'set-editor' : 'set-manual');?>
-  <table class="list"<?php if ($vqname != 'vqm') echo ' style="display:none"';?> id="<?php echo $edit_id;?>">
-    <tbody>
-	  <?php } ?>
-      <tr>
-      <?php if ($vqname == 'vqm_create' || $vqname == 'show_trim' || $vqname == 'show_regex' || $vqname == 'show_info' || $vqname == 'generate_html' || $vqname == 'text_style') { ?>
-        <?php if ($vqname == 'show_regex' && !isset($vqconfig['show_trim'])) { ?>
-        <td class="left"><?php echo $this->language->get('entry_show_trim'); ?></td>
-        <td class="left">
-          <input name="show_trim" type="checkbox" value="1" checked="checked" />
-        </td>
-        <?php } ?>
-        <td class="left"><?php echo $this->language->get('entry_' . $vqname); ?></td>
-        <td class="left">
-          <input name="<?php echo $vqname;?>" type="checkbox" value="1" <?php if ($vqval) echo 'checked="checked" ';?>data-orig="<?php echo $vqval;?> "/>
-		  <?php if ($this->language->get('entry_help_' . $vqname) != 'entry_help_' . $vqname) echo $this->language->get('entry_help_' . $vqname);?>
-        </td>
-	  <?php } elseif ($vqname == 'manual_css') { ?>
-        <td class="left" colspan="2">
-          <?php echo $this->language->get('entry_' . $vqname); ?><br/>
-          <textarea name="manual_css" id="manual_css" style="width:565px;" rows="4" data-orig="<?php echo $vqval;?>"><?php echo $vqval;?></textarea>
-        </td>
-      <?php } else { ?>
-        <td class="left"><?php echo $this->language->get('entry_' . $vqname); ?></td>
-        <td class="left">
-          <?php if ($vqname == 'vqm_xml' || $vqname == 'vqm_cache' || $vqname == 'vqm_backup' || $vqname == 'log_file') { ?>
-          <input class="vqm" type="text" style="width:120px;" disabled="disabled" readonly="readonly" value="<?php echo $vqconfig['vqm'];?>" />
-          <input name="<?php echo $vqname;?>" type="text" class="vqdir" style="width:260px;" value="<?php echo $vqval;?>" data-orig="<?php echo $vqval;?>" />
-          <?php } else { ?>
-          <input name="<?php echo $vqname;?>" type="text"<?php if ($vqname == 'vqm') echo ' class="vqdir"';?> style="width:380px;" value="<?php echo $vqval;?>" data-orig="<?php echo $vqval;?>" />
-          <?php } ?>
-        </td>
-      <?php } ?>
-      </tr>
-      <?php if ($vqname == 'vqm_opcrt' || $vqname == 'search_delay' || $vqname == 'manual_css') { ?>
-    </tbody>
-  </table>
-      <?php if ($edit_id == 'set-vqmod') { ?>
-  <div id="update-buttons" style="float:right"><button class="update-vqmod" id="update-vqmod"><?php echo $button_update_vqmod;?></button> &nbsp; <button class="update-vqmod"><?php echo $button_update;?></button></div>
-	  <?php } ?>
-	  <?php } ?>
+  <input name="vqm_cache" type="hidden" value="<?php echo $vqconfig['vqm_cache'];?>" />
+  <input name="log_file" type="hidden" value="<?php echo $vqconfig['log_file'];?>" />
+<?php unset($vqconfig['vqm_cache'], $vqconfig['log_file']); ?>
+<?php foreach ($vqconfig as $vqname => $vqval) { ?>
+  <?php if ($vqname == 'update' || $vqname == 'vqm_create' || $vqname == 'generate_html') { ?>
+  <?php $edit_id = ($vqname == 'update') ? 'set-vqmod' : ($vqname == 'vqm_create' ? 'set-editor' : 'set-manual');?>
+  <table class="list"<?php if ($vqname != 'update') echo ' style="display:none"';?> id="<?php echo $edit_id;?>">
+  <?php } ?>
+    <tr>
+  <?php if ($vqname == 'vqm_create' || $vqname == 'show_trim' || $vqname == 'show_regex' || $vqname == 'show_info' || $vqname == 'generate_html' || $vqname == 'text_style') { ?>
+    <?php if ($vqname == 'show_regex' && !isset($vqconfig['show_trim'])) { ?>
+      <td class="left"><?php echo $this->language->get('entry_show_trim'); ?></td>
+      <td class="left">
+        <input name="show_trim" type="checkbox" value="1" checked="checked" />
+      </td>
     <?php } ?>
+      <td class="left"><?php echo $this->language->get('entry_' . $vqname); ?></td>
+      <td class="left">
+        <input name="<?php echo $vqname;?>" type="checkbox" value="1" <?php if ($vqval) echo 'checked="checked" ';?>data-orig="<?php echo $vqval;?> "/>
+        <?php if ($this->language->get('entry_help_' . $vqname) != 'entry_help_' . $vqname) echo $this->language->get('entry_help_' . $vqname);?>
+      </td>
+  <?php } elseif ($vqname == 'manual_css') { ?>
+      <td class="left" colspan="2">
+        <?php echo $this->language->get('entry_' . $vqname); ?><br/>
+        <textarea name="manual_css" id="manual_css" style="width:565px;" rows="4" data-orig="<?php echo $vqval;?>"><?php echo $vqval;?></textarea>
+      </td>
+  <?php } else { ?>
+      <td class="left"><?php echo $this->language->get('entry_' . $vqname); ?></td>
+      <td class="left">
+    <?php if ($vqname == 'vqm_backup') { ?>
+        <input name="<?php echo $vqname;?>" type="text" class="vqdir" style="width:380px;" value="<?php echo $vqval;?>" data-orig="<?php echo $vqval;?>" />
+    <?php } else { ?>
+        <input name="<?php echo $vqname;?>" type="text" style="width:380px;" value="<?php echo $vqval;?>" data-orig="<?php echo $vqval;?>" />
+    <?php } ?>
+      </td>
+  <?php } ?>
+    </tr>
+  <?php if ($vqname == 'log_size' || $vqname == 'search_delay' || $vqname == 'manual_css') { ?>
+  </table>
+    <?php if ($edit_id == 'set-vqmod') { ?>
+  <div id="update-buttons" style="float:right"><a href="<?php echo $vqmod_page;?>&checkup=1" class="vqbutton"><?php echo $button_update_check;?></a> &nbsp; &nbsp; <button class="vqbutton vqmod-install update-vqmod"><?php echo $button_update_vqmod;?></button> &nbsp; <button class="vqbutton vqmod-install vqmoderator"><?php echo $button_update;?></button></div>
+    <?php } ?>
+  <?php } ?>
+<?php } ?>
 </div>
 <div id="vqdialog" style="display:none;"></div>
 <div id="vqtooltip" style="display:none;position:absolute;"><?php echo $changelog;?></div>
@@ -278,26 +278,64 @@ $(document).ready(function() {
 			$('#vqmod-xml').after('<div class="warning"><?php echo $error_no_xml;?></div>');
 		}
 	});
-	$('.vqmod-install').click(function() {
-		var xist = ($(this).is('#install-xisting')) ? 'xist' : '1';
-		$(this).after('<img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" />');
-		$('.success').fadeOut(300);
+	function install(vq, vqm) {
 		$.ajax({
-			url : '<?php echo $vqmod_install;?>&vqmod=' + xist,
-			dataType: 'html',
+			url : '<?php echo $vqmod_install;?>&' + vq,
+			dataType: 'json',
 			success: function(data) {
-				if (data.indexOf('INSTALLED') === -1 && data.indexOf('UPGRADE') === -1) {
-					$('.warning').html(data).fadeIn(400);
-				} else {
-					$('.warning').addClass('success').removeClass('warning').html(data).fadeIn(400);
+				if (data['error']) {
+					$('.warning').append(data['error'] + '<br/>').fadeIn(400);
+				}
+				if (data['success']) {
+					doinstall = 0;
+					$('.success').fadeIn(300);
+					$('#installoader').before(data['success'] + '<br/>');
+					if ($('.success').find('#redirect-me').length >= 1) {
+						if (vq == 'govqm=1' || (vq == 'govq=1' && !vqm)) $('#installoader').fadeOut(300);
+						var seconds = $('#redirect-me').data('time'), href = $('#redirect-me').attr('href'), text = $('#redirect-me').html();
+						if (!seconds || typeof(seconds) == 'undefined') seconds = 5;
+						var interval = setInterval(function () {
+							if (seconds <= 0) {
+								if (href) window.location.href = href;
+								clearInterval(interval);
+								$('#redirect-me').html(text);
+							}
+							$('#redirect-me').html(text + ' (' + Math.round(seconds) + ')');
+							seconds--;
+						}, 1000);
+					} else if (vq.indexOf('govq') == -1) {
+						install('go' + vq, vqm);
+					} else if (vq == 'govq=1' && vqm) {
+						install('vqm=1');
+					} else {
+						$('#installoader').fadeOut(300);
+					}
 				}
 			}
 		});
+	}
+<?php if ($install === 'continue') { ?>
+	install('govqm=1');
+	$('.success').append('<div id="installoader"><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /></div>');
+<?php $install = 0; ?>
+<?php } ?>
+	var doinstall = <?php echo $install;?>;
+	$('.vqmod-install').click(function() {
+		var vq = ($(this).hasClass('update-vqmod') || doinstall >= 2);
+		var vqm = ($(this).hasClass('vqmoderator') || doinstall == 1 || doinstall == 3);
+		doinstall = 0;
+		$('.success, .warning').remove();
+		$('.breadcrumb').after('<div class="success" style="display:none;"><div id="installoader"><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /></div></div><div class="warning" style="display:none;"></div>');
+		$('.success').fadeIn(300);
+		if (vq) {
+			install('vq=1', vqm);
+		} else {
+			install('vqm=1');
+		}
 	});
 
 	$('.vqmod-config').click(function() {
 		var highlight = ($(this).hasClass('vqm-update')) ? 'vqm' : ($(this).hasClass('vqmr-update') ? 'vqmr' : false);
-		$('.warning, .success').fadeOut(300, function() { $('.warning, .success').remove(); });
 		$('#vqmod-config').dialog({
 			title: '<?php echo $text_vqmod_config;?>',
 			autoOpen: true,
@@ -373,77 +411,36 @@ $(document).ready(function() {
 			}],
 			open: function() {
 				$('#button-set-vqmod').button('disable');
-				$('.update-vqmod').button();
-				if (highlight) $('.update-vqmod').addClass('ui-state-highlight');
-				if (highlight == 'vqm') $('.update-vqmod:not("#update-vqmod")').removeClass('ui-state-highlight');
-				else if (highlight == 'vqmr') $('#update-vqmod').removeClass('ui-state-highlight');
+				$(this).find('.vqbutton').button();
+				if (highlight == 'vqm') $('.update-vqmod').addClass('ui-state-highlight');
+				else if (highlight == 'vqmr') $('.vqmoderator').addClass('ui-state-highlight');
 			}
 		});
-	});
-	$('.update-vqmod').click(function() {
-		$(this).after('<img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" />');
-		var vqmod = ($(this).is('#update-vqmod')) ? '&vqmod=1' : '';
-		$.ajax({
-			url : '<?php echo $vqmod_install;?>' + vqmod,
-			dataType: 'html',
-			success: function(data) {
-				var div = $('<div/>').hide();
-				if (vqmod === '' || data.indexOf('INSTALLED') != -1 || data.indexOf('UPGRADE') != -1) {
-					div.addClass('success').html(data).fadeIn(400);
-				} else {
-					div.addClass('warning').html(data).fadeIn(400);
-				}
-				$('.breadcrumb').after(div);
-				$('.loading').remove();
-				$('#vqmod-config').dialog('close');
-			}
-		});
-	});
-	$('.vqdir').blur(function() {
-		var vqd = $(this);
-		var name = vqd.attr('name'),
-			vqmdir = $('input[name="vqm"]').val(),
-			value = $.trim(vqd.val());
-		if (value.indexOf('/') == 0) value = value.substr(1);
-		if (name != 'log_file' && value.lastIndexOf('/') != value.length - 1) value += '/';
-		if (name != 'vqm') value = value.replace(vqmdir, '');
-		else $('.vqm').val(value);
-
-		vqd.val(value);
-		$(this).keyup();
 	});
 	var t = {};
 	$('.vqdir').keyup(function() {
 		var vqd = $(this);
-		var name = vqd.attr('name'),
-			vqdir = ((name != 'vqm') ? vqd.prev('.vqm') : $('.vqm')),
-			vqmdir = $('input[name="vqm"]').val(),
-			value = $.trim(vqd.val());
-		if (t[name]) clearTimeout(t[name]);
-		if (name == 'vqm') {
-			$('.vqm').val(value);
-			$('.vqdir:not([name="vqm"])').keyup();
-		} else {
-			value = vqmdir + '&file=' + value;
-		}
+		var value = $.trim(vqd.val());
+		if (t) clearTimeout(t);
 		var checkdir = function() {
-
 			$.ajax({
 				url : '<?php echo $vqmod_check_dir;?>' + value,
 				dataType: 'json',
 				success: function(exists) {
-					if (exists == 'exists') {
-						var color = '#ccffc4', colors = '#add7a6';
-					} else {
-						var color = '#ffbebe', colors = '#dfa6a6';
-					}
-
+					var color = (exists == 'exists') ? '#ccffc4' : '#ffbebe';
 					vqd.animate({'background-color': color}, 500);
-					vqdir.animate({'background-color': colors}, 500);
 				}
 			});
 		};
-		t[name] = setTimeout(checkdir, 800);
+		t = setTimeout(checkdir, 800);
+	}).blur(function() {
+		var vqd = $(this);
+		var value = $.trim(vqd.val());
+		if (value.indexOf('../vqmod/') != -1) value = value.replace('../vqmod', '');
+		value = value.split('/').join('') + '/';
+
+		vqd.val(value);
+		$(this).keyup();
 	});
 	$('.vqdir').blur();
 
