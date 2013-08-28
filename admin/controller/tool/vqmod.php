@@ -900,7 +900,6 @@ class ControllerToolVqmod extends Controller {
 		$search = (isset($this->request->post['search'])) ? htmlspecialchars_decode($this->request->post['search']) : false;
 		$regex = isset($this->request->post['regex']);
 		if (strpos($file, '*') !== false) { // Check first file found (Maybe we can do better?)
-			$this->load->model('tool/vqmod');
 			$dirs = glob('../' . $file);
 			if ($dirs) $file = str_replace('../', '', $dirs[0]);
 		}
@@ -910,6 +909,7 @@ class ControllerToolVqmod extends Controller {
 				$subfolder = SUBFOLDER;
 				$tests = '../../';
 			} else {
+				$this->load->model('tool/vqmod');
 				$tests = $this->model_tool_vqmod->vqm . 'test/';
 			}
 			if (file_exists($tests) && is_dir($tests)) {
