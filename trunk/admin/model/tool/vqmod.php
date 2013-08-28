@@ -14,7 +14,10 @@ class ModelToolVqmod extends Model {
 		$files = array();
 		$error = $message = array();
 		$vqm_backup = $this->config->get('vqm_backup');
-		if (!file_exists($vqm_backup) && !file_exists(dirname($vqm_backup))) $vqm_backup = '';
+		if (strpbrk($vqm_backup, "\\/?%*:|\"<>") === false || strpos($vqm_backup, $this->vqm . $this->vqm) !== false) {
+			$error[] = sprintf($this->language->get('error_backup_folder'), $vqm_backup);
+			$vqm_backup = $this->xml;
+		}
 		$use_errors = libxml_use_internal_errors(true); // Save error setting
 		$dirfiles = glob($this->xml . '*.xml*');
 		$bakfiles = glob($vqm_backup . '*.xml*');
@@ -85,7 +88,8 @@ class ModelToolVqmod extends Model {
 						$this->deleteFile($vqm_backup . 'temp.tmp');
 						$moved = $this->renameFile($path, $vqm_backup . $file);
 						if ($moved) {
-							$message[] = sprintf($this->language->get('text_moved_backup'), $file);
+							if ($vqm_backup == $this->xml) $message[] = sprintf($this->language->get('text_found_backup'), $file) . $this->language->get('text_moved_xml');
+							else $message[] = sprintf($this->language->get('text_found_backup'), $file) . $this->language->get('text_moved_backup');
 							$path = $vqm_backup . $file;
 						} else {
 							$error[] = sprintf($this->language->get('error_moving_backup'), $file);
