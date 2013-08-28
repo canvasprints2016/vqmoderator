@@ -53,7 +53,9 @@ $_['text_vqmod_uploads']	= 'Select a vQMod XML file to upload to your store.<br/
 $_['text_vqmod_exists']		= 'XML file already Installed!';
 $_['text_vqmod_uninstall']	= 'The uploaded XML file already exists, and seems to be installed.<br/>Would you like to continue, or un-install it first?';
 $_['text_backup_file']		= ' - [BaCkUp FiLe]';
-$_['text_moved_backup']		= 'Found Backup-file "%s" in your XML Folder. Moved to Backup Folder!';
+$_['text_found_backup']		= 'Found Backup-file "%s" in your XML Folder --> ';
+$_['text_moved_backup']		= 'Moved to Backup Folder!';
+$_['text_moved_xml']		= 'Moved to XML Folder!';
 $_['text_xml_install']		= '<img src="view/image/attention.png" alt="Install" title="Uninstalled! Install?" />';
 $_['text_xml_uninstall']	= '<img src="view/image/success.png" alt="Uninstall" title="Installed! Uninstall?" />';
 $_['text_xml_invalid']		= '<img src="view/image/delete.png" alt="Invalid!" title="XML File is invalid!" />';
@@ -259,6 +261,7 @@ $_['success_install_vqmoder1']	= 'Successfully created my own installation file:
 $_['success_install_vqmoder2']	= 'Successfully Re-created my own installation file: vQModerator.xml!';
 $_['success_reload']		= '<br />Click <a href="%s" id="redirect-me" data-time="10">here to reload</a>';
 $_['error_installation']	= 'Warning: vQModerator not Fully installed! Please <a href="#" class="vqmod-install vqmoderator" onclick="return false;">Update vQModerator</a>!';
+$_['error_backup_folder']	= 'Warning: Your backup folder settings (<b>%s</b>) are wrong! Please edit your <a href="#" class="vqmod-config" onclick="return false;">Settings</a>.';
 $_['error_vqmod_folders']	= 'Warning: vQMod installed, but something is wrong with the <a href="#" class="vqmod-config" onclick="return false;">folder settings</a>!<br/>Click <a href="#" class="vqmod-install" onclick="return false;">here</a> to re-install vQMod with the folder settings.<br/>';
 $_['error_vqmod_install']	= 'Warning: vQMod found, but not installed! Click <a href="#" class="vqmod-install" onclick="return false;">here</a> to update and install vQMod.<br/>';
 $_['error_vqmod_missing']	= '<ul><li>Could not find vQMod on your system!</li>
