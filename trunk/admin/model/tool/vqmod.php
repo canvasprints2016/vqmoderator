@@ -1,6 +1,6 @@
 <?php
 class ModelToolVqmod extends Model {
-	public $version = '1.1.2';
+	public $version = '1.1.3';
 	public $vqmver = 0;
 	public $vqm = '../vqmod/';
 	public $xml = '../vqmod/xml/';

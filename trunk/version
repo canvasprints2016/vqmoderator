@@ -1,3 +1,5 @@
+1.1.3
+- Bugfix: Editor "Search in File" was broken
 1.1.2
 - Added: Automatic Language Support (No languages yet though...)
 - Added: Contribute Dialog (help make vQModerator even better)
