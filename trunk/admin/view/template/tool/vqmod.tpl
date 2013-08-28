@@ -133,7 +133,11 @@
   <?php if ($vqname == 'log_size' || $vqname == 'search_delay' || $vqname == 'manual_css') { ?>
   </table>
     <?php if ($edit_id == 'set-vqmod') { ?>
-  <div id="update-buttons" style="float:right"><a href="<?php echo $vqmod_page;?>&checkup=1" class="vqbutton"><?php echo $button_update_check;?></a> &nbsp; &nbsp; <button class="vqbutton vqmod-install update-vqmod"><?php echo $button_update_vqmod;?></button> &nbsp; <button class="vqbutton vqmod-install vqmoderator"><?php echo $button_update;?></button></div>
+  <div id="update-buttons" style="float:right"><a href="<?php echo $vqmod_page;?>&checkup=1" class="vqbutton"><?php echo $button_update_check;?></a> &nbsp; &nbsp; &nbsp; <button class="vqbutton vqmod-install update-vqmod"><?php echo $button_update_vqmod;?></button> &nbsp; <button class="vqbutton vqmod-install vqmoderator"><?php echo $button_update;?></button>
+      <?php if (isset($vqmod_contribute)) { ?>
+    <br/><br/><button class="vqbutton contribute" style="float:right;"><?php echo $button_contribute;?></button>
+      <?php } ?>
+  </div>
     <?php } ?>
   <?php } ?>
 <?php } ?>
@@ -142,6 +146,14 @@
 <div id="vqtooltip" style="display:none;position:absolute;"><?php echo $changelog;?></div>
 <div id="vqloading" style="position:fixed;width:100%;text-align:center;top:180px;display:none;"><img alt="Loading..." src="<?php echo $loading_image;?>" /></div>
 <div id="vqgenerate" style="display:none;position:absolute;"><?php echo $text_generate_mods;?></div>
+<?php if (isset($vqmod_contribute)) { ?>
+<div id="vqcontribute" style="display:none;"><?php echo $text_contribute;?><br/><br/><table class="form">
+	<tr><td><?php echo $entry_email;?></td><td><input type="text" id="contribute-email" name="email_address" value="<?php echo $this->config->get('config_email');?>" style="width:98%;" /></td></tr>
+	<tr><td><?php echo $entry_contribute;?></td><td><input type="text" id="contribute-lang" name="subject" value="" style="width:98%;" /></td></tr>
+	<tr><td colspan="2"><textarea id="contribute" name="message" style="width:700px;height:200px;"><?php echo $contribute_file;?></textarea></td></tr></table>
+	<div style="float:right"><form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank" id="donate" style="display:inline;"><input type="hidden" name="cmd" value="_donations" /><input type="hidden" name="business" value="paypal@avanosch.nl" /><input type="hidden" name="lc" value="US" /><input type="hidden" name="item_name" value="vQModerator Appreciation Donation" /><input type="hidden" name="currency_code" value="USD" /><input type="hidden" name="bn" value="PP-DonationsBF:btn_donate_LG.gif:NonHosted" /><input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" style="border:0; position:relative; top:7px;" name="submit" alt="PayPal - The safer, easier way to pay online!" /><img alt="" border="0" src="https://www.paypalobjects.com/nl_NL/i/scr/pixel.gif" width="1" height="1" /></form> &nbsp; &nbsp; <button class="vqbutton contribute-this"><?php echo $button_contribute;?>!</button> &nbsp; <button class="vqbutton" onclick="$('#vqcontribute').dialog('close');"><?php echo $button_cancel;?></button></div>
+</div>
+<?php } ?>
 <script type="text/javascript">
 <?php if ($changelog) { ?>
 $('.vqtooltip').mouseenter(function() {
@@ -163,6 +175,64 @@ $('#takeover').live('click', function() {
 });
 <?php } ?>
 $(document).ready(function() {
+	$('.vqbutton').button();
+<?php if (isset($vqmod_contribute)) { ?>
+	// BOF - Contribute stuff
+	$('#contribute').data('orig', $('#contribute').val());
+	var contribute = CodeMirror.fromTextArea(document.getElementById('contribute'), {
+		mode: 'text/x-php',
+		matchBrackets: true,
+		indentUnit: 2,
+		indentWithTabs: true,
+		lineWrapping: true,
+		enterMode: "keep"
+	});
+	$('.contribute').click(function() {
+		$('#vqcontribute').dialog({
+			title: '<?php echo $button_contribute;?>',
+			autoOpen: true,
+			width: 800,
+			height: 600,
+			open: function() {
+				contribute.refresh();
+				var newheight = ($('#vqcontribute').innerHeight() - 330), mirror = $('#vqcontribute').find('.CodeMirror-scroll');
+				mirror.css('height', newheight);
+			},
+			resizeStop: function(event, ui) {
+				var newheight = (ui.size.height - ui.originalSize.height), mirror = $('#vqcontribute').find('.CodeMirror-scroll');
+				newheight += mirror.height();
+				mirror.animate({'height': newheight}, 300);
+			}
+		});
+	});
+	$('.contribute-this').click(function() {
+		contribute.save();
+		if ($('#contribute').val() == $('#contribute').data('orig')) {
+			$('#vqcontribute').find('.warning').fadeOut(300, function() { $(this).remove(); });
+			$('#vqcontribute').find('table.form').before('<div class="warning" style="display:none;"><?php echo $this->language->get('text_error_nochange');?></div>');
+			$('#vqcontribute').find('.warning').fadeIn(300);
+		} else {
+			$(this).button('disable').after('<img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" />');
+			$.ajax({
+				url: '<?php echo $vqmod_contribute;?>',
+				data: $('#contribute, #contribute-email, #contribute-lang'),
+				dataType: 'json',
+				type: 'POST',
+				success: function(data) {
+					$('.loading').fadeOut(300, function() { $(this).remove(); });
+					$('#vqcontribute').find('.warning, .success').fadeOut(300, function() { $(this).remove(); });
+					$('#vqcontribute').find('table.form').before('<div class="success" style="display:none;"></div><div class="warning" style="display:none;"></div>');
+					if (data['error']) {
+						$('#vqcontribute').find('.warning').append(data['error']).fadeIn(300);
+						$('.contribute-this').button('enable');
+					}
+					if (data['success']) $('#vqcontribute').find('.success').append(data['success']).fadeIn(300);
+				}
+			});
+		}
+	});
+	// EOF - Contribute stuff
+<?php } ?>
 	$('#xml-filter').buttonset();
 	$('input[name="xml_filter[]"]').change(function() {
 		var these = $(this).val();
@@ -334,6 +404,15 @@ $(document).ready(function() {
 		}
 	});
 
+	var configCodeMirror = CodeMirror.fromTextArea(document.getElementById('manual_css'), {
+		height: "250px",
+		mode: 'css',
+		matchBrackets: true,
+		indentUnit: 2,
+		indentWithTabs: true,
+		lineWrapping: true,
+		enterMode: "keep"
+	});
 	$('.vqmod-config').click(function() {
 		var highlight = ($(this).hasClass('vqm-update')) ? 'vqm' : ($(this).hasClass('vqmr-update') ? 'vqmr' : false);
 		$('#vqmod-config').dialog({
@@ -368,12 +447,14 @@ $(document).ready(function() {
 					var config = $('#vqmod-config').parent();
 					config.find('table:visible, #update-buttons').hide();
 					$('#set-manual').show();
+					configCodeMirror.refresh();
 					config.find('.ui-button').button('enable').removeClass('ui-state-focus ui-state-hover');
 					$('#button-set-manual').button('disable');
 				}
 			},{
 				text: '<?php echo $button_save;?>',
 				click: function() {
+					configCodeMirror.save();
 					$.ajax({
 						url : '<?php echo $vqmod_config;?>',
 						type: 'POST',
@@ -410,8 +491,8 @@ $(document).ready(function() {
 				}
 			}],
 			open: function() {
+				configCodeMirror.refresh();
 				$('#button-set-vqmod').button('disable');
-				$(this).find('.vqbutton').button();
 				if (highlight == 'vqm') $('.update-vqmod').addClass('ui-state-highlight');
 				else if (highlight == 'vqmr') $('.vqmoderator').addClass('ui-state-highlight');
 			}
@@ -433,7 +514,7 @@ $(document).ready(function() {
 			});
 		};
 		t = setTimeout(checkdir, 800);
-	}).blur(function() {
+	}).focus(function() {
 		var vqd = $(this);
 		var value = $.trim(vqd.val());
 		if (value.indexOf('../vqmod/') != -1) value = value.replace('../vqmod', '');
@@ -441,8 +522,8 @@ $(document).ready(function() {
 
 		vqd.val(value);
 		$(this).keyup();
-	});
-	$('.vqdir').blur();
+	}).blur(function() { $(this).focus(); });
+	$('.vqdir').keyup();
 
 	$('.vqmod-log').click(function() {
 		$('#vqmod-log').dialog({

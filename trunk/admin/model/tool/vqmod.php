@@ -1,6 +1,6 @@
 <?php
 class ModelToolVqmod extends Model {
-	public $version = '1.1.1';
+	public $version = '1.1.2';
 	public $vqmver = 0;
 	public $vqm = '../vqmod/';
 	public $xml = '../vqmod/xml/';
@@ -8,11 +8,13 @@ class ModelToolVqmod extends Model {
 	public $vqtags = 'http://vqmod.googlecode.com/svn/tags/';
 	public $vqopcrt = 'platforms/opencart/';
 	public $vqmtrunk = 'http://vqmoderator.googlecode.com/svn/trunk/';
+	//public $vqmtrunk = '../../vQModerator/';
 
 	public function getFiles() {
 		$files = array();
 		$error = $message = array();
 		$vqm_backup = $this->config->get('vqm_backup');
+		if (!file_exists($vqm_backup) && !file_exists(dirname($vqm_backup))) $vqm_backup = '';
 		$use_errors = libxml_use_internal_errors(true); // Save error setting
 		$dirfiles = glob($this->xml . '*.xml*');
 		$bakfiles = glob($vqm_backup . '*.xml*');
@@ -406,7 +408,7 @@ class ModelToolVqmod extends Model {
 				if (!$reset[$path]) return false;
 			}
 		}
-		if ($file) {
+		if ($file && substr($file, -1) != '/') {
 			$perms = $this->setPermission($file);
 			if (!file_exists($file) || $overwrite) {
 				$fh = fopen($file, 'w');
@@ -578,6 +580,13 @@ class ModelToolVqmod extends Model {
 		}
 		// Remove dirs from vqm_backup, and add vqmod dir (so it's always one folder deep)
 		$data['vqm_backup'] = $this->vqm . (isset($data['vqm_backup']) ? str_replace(array($this->vqm, '/', '.'), '', $data['vqm_backup']) . '/' : 'backups/');
+		$vqm_backup = $this->config->get('vqm_backup');
+		if ($vqm_backup && $data['vqm_backup'] && $data['vqm_backup'] != $vqm_backup && file_exists($vqm_backup)) {
+			$backups = glob($vqm_backup . '*');
+			foreach ($backups as $backup) $this->renameFile($backup, $this->xml . basename($backup));
+			$this->delTree($vqm_backup);
+			$this->createFile($data['vqm_backup']);
+		}
 		$sorted = array(
 			'update' => (isset($data['update']) ? $data['update'] : 24),
 			'vqm_cache' => (isset($data['vqm_cache']) ? $data['vqm_cache'] : $this->vqm . 'vqcache/'),
@@ -597,7 +606,6 @@ class ModelToolVqmod extends Model {
 		);
 		// Save settings if POSTed, or if show_trim is not set (first install)
 		if ($posted || $this->config->get('show_trim') === null) {
-			$sorted['vqm_backup'] = $this->vqm . $sorted['vqm_backup'];
 			foreach ($sorted as $key => $val) $this->config->set($key, $val);
 			$this->model_setting_setting->editSetting('vqmod', $sorted);
 		}
@@ -605,7 +613,7 @@ class ModelToolVqmod extends Model {
 	}
 
 	public function isRemoteFile($url) {
-		if (strpos($url, '../../') === 0) return true; // Return true if it's a relative local path (testing)
+		if (strpos($url, '../../') === 0 && file_exists($url)) return true; // Return true if it's a relative local path (testing)
 		$check = curl_init($url);
 
 		curl_setopt($check, CURLOPT_NOBODY, true);
@@ -613,6 +621,22 @@ class ModelToolVqmod extends Model {
 		$returned = curl_getinfo($check, CURLINFO_HTTP_CODE);
 		curl_close($check);
 		return ($returned == 200);
+	}
+
+	public function getContribute($type = false) {
+		$mailme = $this->vqmtrunk . (!$type ? 'contact' : 'contribute');
+		$mailme = ($this->isRemoteFile($mailme)) ? trim(file_get_contents($mailme)) : '';
+		if ($type) {
+			$mailme = explode('~|[', $mailme);
+			$message = array_shift($mailme);
+			$subject = $file = array('');
+			foreach ($mailme as $part) {
+				if (strpos($part, 'FILE:') !== false) $file = explode(']|~', substr($part, 5));
+				elseif (strpos($part, 'SUBJECT:') !== false) $subject = explode(']|~', substr($part, 8));
+			}
+			$mailme = array('message' => $message, 'file' => trim($file[0]), 'subject' => trim($subject[0]));
+		}
+		return $mailme;
 	}
 
 	public function log($errors = array()) {
@@ -1149,36 +1173,46 @@ class ModelToolVqmod extends Model {
 
 	public function getVQModerator($dirs = array('../')) {
 		$success = true;
-		// Get repository vQModerator version
-		$modver = $this->vqmtrunk . 'version';
-		$modver = ($this->isRemoteFile($modver)) ? file_get_contents($modver) : 0;
-		if ($modver) {
-			$modver = preg_split("/\r\n|\n|\r/", $modver);
-			$modver = trim($modver[0]); // Version is first line (rest is changelog)
-		}
-		if ((int)str_replace('.', '', $modver) < (int)str_replace('.', '', $this->version)) {
-			$success = 'warning';
-		} else {
-			$this->version = $modver;
-			// Get vQModerator from Repository
-			$files = $this->vqmtrunk . 'files';
-			$files = ($this->isRemoteFile($files)) ? file_get_contents($files) : '';
-			$files = preg_split("/\r\n|\n|\r/", $files);
-			foreach ($files as $file) {
-				$file = trim($file);
-				$remote = $this->vqmtrunk . $file;
-				if ($file && $this->isRemoteFile($remote)) {
+		$admin = basename(DIR_APPLICATION);
+		// Get language list to check for
+		$this->load->model('localisation/language');
+		$languages = $this->model_localisation_language->getLanguages();
+		$langs = array();
+		// Get vQModerator from Repository
+		$files = $this->vqmtrunk . 'files';
+		$files = ($this->isRemoteFile($files)) ? file_get_contents($files) : '';
+		$files = preg_split("/\r\n|\n|\r/", $files);
+		foreach ($files as $file) {
+			$file = trim($file);
+			$remote = $this->vqmtrunk . $file;
+			if ($file && $this->isRemoteFile($remote)) {
+				if ($admin != 'admin') $file = str_replace('admin/', $admin . '/', $file);
+				if (strpos($file, 'language/english')) {
+					// Check for language files
+					foreach ($languages as $language) {
+						$rremote = str_replace('english', $language['directory'], $remote);
+						if ($this->isRemoteFile($rremote)) {
+							$data = file_get_contents($rremote);
+							$ffile = str_replace('english', $language['directory'], $file);
+							foreach ($dirs as $dir) {
+								if ($success) $success = $this->createFile($dir . $ffile, $data, 'text', 0755);
+							}
+							if ($success && $language['code'] != 'en') $langs[] = $language['name'];
+						}
+					}
+				} else {
 					$data = file_get_contents($remote);
 					foreach ($dirs as $dir) {
 						if ($success) $success = $this->createFile($dir . $file, $data, 'text', 0755);
 					}
-				} else {
-					$success = false;
 				}
+			} else {
+				$success = false;
 			}
-			if ($success) $this->deleteFile($this->xml . 'vQModerator.xml');
 		}
-		return $success;
+		if ($success) $this->deleteFile($this->xml . 'vQModerator.xml');
+
+		return ($success && $langs) ? $langs : $success;
 	}
 
 	public function installVQModerator() {
