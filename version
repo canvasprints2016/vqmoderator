@@ -1,3 +1,10 @@
+1.1.2
+- Added: Automatic Language Support (No languages yet though...)
+- Added: Contribute Dialog (help make vQModerator even better)
+- <b>Please contribute, and send your translation!</b> (see Settings --> Contribute)
+- Fixed: Changing backup folder will move backups to new folder, and remove old folder
+- Bugfix: Backup path was not displayed/saved correctly
+- Some other small bugfixes
 1.1.1
 - Totally overhauled the installation/update procedure
 - Removed vQMod folder settings (no longer needed)

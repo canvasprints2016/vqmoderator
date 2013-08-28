@@ -8,6 +8,7 @@ class ControllerToolVqmod extends Controller {
 
 		$this->document->setTitle($this->language->get('heading_title'));
 		$this->document->addStyle('view/stylesheet/vqmod.css');
+		$this->document->addScript('view/javascript/codemirror.js');
 
 		// Get settings (and save default settings if not found)
 		$settings_check = $this->model_tool_vqmod->settings();
@@ -157,9 +158,23 @@ class ControllerToolVqmod extends Controller {
 		if ($success) $this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
 
 		// Get online vQMod & vQModerator Versions
+		$vqm_lang = '';
 		if (isset($this->request->get['checkup'])) {
 			$this->model_tool_vqmod->deleteFile(DIR_CACHE . 'cache.vqmoderator');
 			$updated = true;
+			// Get language list to check for
+			$this->load->model('localisation/language');
+			$languages = $this->model_localisation_language->getLanguages();
+			$remote = $this->model_tool_vqmod->vqmtrunk . 'admin/language/english/tool/vqmod.php';
+			$local = '../' . basename(DIR_APPLICATION) . '/language/english/tool/vqmod.php';
+			foreach ($languages as $language) {
+				$rremote = str_replace('english', $language['directory'], $remote);
+				$llocal = str_replace('english', $language['directory'], $local);
+				if ($this->model_tool_vqmod->isRemoteFile($rremote) && !file_exists($llocal)) {
+					$vqm_lang .= ' ' . $language['name'];
+				}
+			}
+			if ($vqm_lang) $vqm_lang = $this->language->get('text_language_found') . $vqm_lang;
 		}
 		$versions = $this->model_tool_vqmod->getVersions();
 		$vq_version = $versions['vq'];
@@ -169,8 +184,13 @@ class ControllerToolVqmod extends Controller {
 		$this->data['changelog'] = $versions['changelog'];
 
 		$this->data['heading_title'] = $this->language->get('heading_title');
-		if ($vqm_ver > str_replace('.', '', $this->model_tool_vqmod->version)) {
-			$this->data['heading_title'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-install vqmoderator vqtooltip">(' . $this->language->get('text_update_found') . $vqm_version . ')</small>';
+		if ($vqm_lang || $vqm_ver > str_replace('.', '', $this->model_tool_vqmod->version)) {
+			if ($vqm_ver > str_replace('.', '', $this->model_tool_vqmod->version)) {
+				if ($vqm_lang) $vqm_lang = ' &amp; ' . $vqm_lang;
+				$this->data['heading_title'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-install vqmoderator vqtooltip">(' . $this->language->get('text_update_found') . $vqm_version . $vqm_lang . ')</small>';
+			} else {
+				$this->data['heading_title'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-install vqmoderator">(' . $vqm_lang . ')</small>';
+			}
 			if ($this->data['install'] === 2) $this->data['install'] = 3;
 			$updated = false;
 		}
@@ -283,6 +303,27 @@ class ControllerToolVqmod extends Controller {
 		$this->data['vqmod_generate'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/generator', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['vqmod_log'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/log', 'token=' . $this->session->data['token'] . '&file=', 'SSL'));
 		$this->data['vqmod_log_download'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/download', 'token=' . $this->session->data['token'] . '&file=', 'SSL'));
+		$mailme = $this->model_tool_vqmod->getContribute('info');
+		if ($mailme && $mailme['message']) {
+			$admin = basename(DIR_APPLICATION);
+			if ($admin != 'admin') $mailme['file'] = str_replace('admin', $admin, $mailme['file']);
+			$this->data['entry_email'] = $this->language->get('entry_email');
+			$this->data['entry_contribute'] = ($mailme['subject']) ? $mailme['subject'] : $this->language->get('entry_contribute');
+			$this->data['vqmod_contribute'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/contact', 'subject=' . urlencode($this->data['entry_contribute']) . '&token=' . $this->session->data['token'], 'SSL'));
+			$this->data['button_contribute'] = $this->language->get('button_contribute');
+			$this->data['text_contribute'] = $this->language->get('text_contribute') . $mailme['message'];
+			if ($mailme['file'] == $admin . '/language/english/tool/vqmod.php') {
+				$this->load->model('localisation/language');
+				$languages = $this->model_localisation_language->getLanguages();
+				$lang = ($this->config->get('config_admin_language')) ? $this->config->get('config_admin_language') : 'en';
+				foreach ($languages as $language) {
+					if ($language['code'] == $lang) $this->data['contribute_file'] = (file_exists(DIR_LANGUAGE . $language['directory'] . '/tool/vqmod.php')) ? file_get_contents(DIR_LANGUAGE . $language['directory'] . '/tool/vqmod.php') : '';
+				}
+			}
+			if (!isset($this->data['contribute_file']) || !$this->data['contribute_file']) $this->data['contribute_file'] = (file_exists('../' . $mailme['file'])) ? file_get_contents('../' . $mailme['file']) : '';
+			if (!$this->data['contribute_file']) $this->data['contribute_file'] = $mailme['file'];
+			if ($this->data['contribute_file']) $this->data['contribute_file'] = htmlspecialchars($this->data['contribute_file']);
+		}
 
 		// Added XML sorting
 		$this->data['xml_sorter'] = false;
@@ -394,9 +435,7 @@ class ControllerToolVqmod extends Controller {
 
 		$this->document->addStyle('view/stylesheet/vqmod.css');
 		$this->document->addScript('view/javascript/jquery/ajaxupload.js');
-		if ($this->config->get('text_style')) {
-			$this->document->addScript('view/javascript/codemirror.js');
-		}
+		$this->document->addScript('view/javascript/codemirror.js');
 
 		$this->data['heading_title'] = $this->language->get('heading_title') . ' - ' . $this->language->get('heading_editor');
 
@@ -513,6 +552,27 @@ class ControllerToolVqmod extends Controller {
 		$this->data['vqmod_editor'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/editor', 'token=' . $this->session->data['token'] . ($file ? '&file=' . $file : ''), 'SSL'));
 		$this->data['autocomplete'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/autocomplete', 'token=' . $this->session->data['token'], 'SSL'));
 		$this->data['upload'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/uploadtoxml', 'token=' . $this->session->data['token'], 'SSL'));
+		$mailme = $this->model_tool_vqmod->getContribute('info');
+		if ($mailme && $mailme['message']) {
+			$admin = basename(DIR_APPLICATION);
+			if ($admin != 'admin') $mailme['file'] = str_replace('admin', $admin, $mailme['file']);
+			$this->data['entry_email'] = $this->language->get('entry_email');
+			$this->data['entry_contribute'] = ($mailme['subject']) ? $mailme['subject'] : $this->language->get('entry_contribute');
+			$this->data['vqmod_contribute'] = str_replace('&amp;', '&', $this->url->link('tool/vqmod/contact', 'subject=' . urlencode($this->data['entry_contribute']) . '&token=' . $this->session->data['token'], 'SSL'));
+			$this->data['button_contribute'] = $this->language->get('button_contribute');
+			$this->data['text_contribute'] = $this->language->get('text_contribute') . $mailme['message'];
+			if ($mailme['file'] == $admin . '/language/english/tool/vqmod.php') {
+				$this->load->model('localisation/language');
+				$languages = $this->model_localisation_language->getLanguages();
+				$lang = ($this->config->get('config_admin_language')) ? $this->config->get('config_admin_language') : 'en';
+				foreach ($languages as $language) {
+					if ($language['code'] == $lang) $this->data['contribute_file'] = (file_exists(DIR_LANGUAGE . $language['directory'] . '/tool/vqmod.php')) ? file_get_contents(DIR_LANGUAGE . $language['directory'] . '/tool/vqmod.php') : '';
+				}
+			}
+			if (!isset($this->data['contribute_file']) || !$this->data['contribute_file']) $this->data['contribute_file'] = (file_exists('../' . $mailme['file'])) ? file_get_contents('../' . $mailme['file']) : '';
+			if (!$this->data['contribute_file']) $this->data['contribute_file'] = $mailme['file'];
+			if ($this->data['contribute_file']) $this->data['contribute_file'] = htmlspecialchars($this->data['contribute_file']);
+		}
 		$this->data['loading_image'] = "view/image/loading.png";
 		$this->data['saved_image'] = "view/image/saved.png";
 		$log_file = $this->config->get('log_file');
@@ -704,10 +764,52 @@ class ControllerToolVqmod extends Controller {
 		$this->model_tool_vqmod->generateAll();
 	}
 
+	public function contact() {
+		$this->language->load('tool/vqmod');
+		$this->load->model('tool/vqmod');
+		$json = array();
+
+		if ($this->request->server['REQUEST_METHOD'] == 'POST') {
+			$entry_subject = (isset($this->request->get['subject']) ? $this->request->get['subject'] : $this->language->get('entry_contribute'));
+			if (!$this->request->post['subject']) $json['error'] = $entry_subject . ' ' . $this->language->get('text_required');
+			if (!$this->request->post['message']) $json['error'] = $this->language->get('text_error_message');
+			if (!$this->request->post['email_address']) $json['error'] = $this->language->get('entry_email') . ' ' . $this->language->get('text_required');
+			$mailme = $this->model_tool_vqmod->getContribute();
+			if (!$json && $mailme) {
+				$json['success'] = $this->language->get('text_message_sent');
+				$this->load->model('setting/store');
+
+				$message  = "Message from " . HTTP_CATALOG;
+				if ($this->request->post['email_address'] != $this->config->get('config_email')) {
+					$message .= " (With Store Mail set to " . $this->config->get('config_email') . ")";
+				}
+				$message .= ":\n------------------------------------------------------------------------\n\n";
+				$message .= html_entity_decode($this->request->post['message'], ENT_QUOTES, 'UTF-8') . "\n";
+
+				$mail = new Mail();
+				$mail->protocol = $this->config->get('config_mail_protocol');
+				$mail->parameter = $this->config->get('config_mail_parameter');
+				$mail->hostname = $this->config->get('config_smtp_host');
+				$mail->username = $this->config->get('config_smtp_username');
+				$mail->password = $this->config->get('config_smtp_password');
+				$mail->port = $this->config->get('config_smtp_port');
+				$mail->timeout = $this->config->get('config_smtp_timeout');
+				$mail->setTo($mailme);
+				$mail->setFrom($this->request->post['email_address']);
+				$mail->setSender($this->config->get('config_name'));
+				$mail->setSubject(html_entity_decode($this->request->post['subject'], ENT_QUOTES, 'UTF-8'));
+				$mail->setText($message);
+				$mail->send();
+			}
+		}
+
+		$this->response->setOutput(json_encode($json));
+	}
+
   	public function saveconfig() {
 		$this->load->language('tool/vqmod');
 
-		$json = array('success' => false, 'warning' => $this->language->get('error_save_config'));
+		$json = array();
 		if (!$this->validate()) {
 			$json['warning'] = $this->language->get('error_permission');
 		}
@@ -782,8 +884,9 @@ class ControllerToolVqmod extends Controller {
 		$json = '';
 		$dir = (isset($this->request->get['dir'])) ? $this->request->get['dir'] : false;
 		if ($dir) {
+			$this->load->model('tool/vqmod');
 			if (substr($dir, -1) == '/') $dir = substr($dir, 0, -1);
-			if (strpos($dir, $this->vqm) === false) $dir = $this->vqm . $dir;
+			if (strpos($dir, $this->model_tool_vqmod->vqm) === false) $dir = $this->model_tool_vqmod->vqm . $dir;
 			if (file_exists($dir) && is_dir($dir)) {
 				$json = 'exists';
 			}
@@ -898,7 +1001,13 @@ class ControllerToolVqmod extends Controller {
 			}
 		} elseif (isset($this->request->get['vqm']) && $this->request->get['vqm']) {
 			$success = $this->model_tool_vqmod->getVQModerator();
-			if ($success === true) $json['success'] = sprintf($this->language->get('success_download_vqmoder'), $this->url->link('tool/vqmod', 'installing=1&token=' . $this->session->data['token'], 'SSL'));
+			$languages = '';
+			if (is_array($success)) {
+				$languages = '';
+				foreach ($success as $lang) $languages .= $this->language->get('success_download_lang') . $lang . '<br/>';
+				$success = true;
+			}
+			if ($success === true) $json['success'] = $languages . sprintf($this->language->get('success_download_vqmoder'), $this->url->link('tool/vqmod', 'installing=1&token=' . $this->session->data['token'], 'SSL'));
 			elseif ($success) $json['success'] = $this->language->get('error_newest_vqmoder');
 			else $json['error'] = $this->language->get('error_download_vqmoder');
 		} elseif (isset($this->request->get['govqm']) && $this->request->get['govqm']) {

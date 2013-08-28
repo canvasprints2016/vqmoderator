@@ -122,13 +122,24 @@
     </tr>
   <?php if ($vqname == 'log_size' || $vqname == 'search_delay' || $vqname == 'manual_css') { ?>
   </table>
-	  <?php } ?>
+    <?php if ($edit_id == 'set-vqmod' && isset($vqmod_contribute)) { ?>
+  <div id="update-buttons" style="float:right"><button class="vqbutton contribute"><?php echo $button_contribute;?></button></div>
     <?php } ?>
+  <?php } ?>
+<?php } ?>
 </div>
 <img id="image-preview" style="display:none;position:fixed;" src="" />
 <div id="vqloading" style="position:fixed;width:100%;text-align:center;top:180px;"><img alt="Loading..." src="<?php echo $loading_image;?>" /></div>
 <div id="saved-vqmod" style="position:fixed;width:100%;text-align:center;top:200px;display:none;"><img alt="Saved!!!" src="<?php echo $saved_image;?>" /></div>
 <div id="vqgenerate" style="display:none;position:absolute;"><?php echo $text_generate_mods;?></div>
+<?php if (isset($vqmod_contribute)) { ?>
+<div id="vqcontribute" style="display:none;"><?php echo $text_contribute;?><br/><br/><table class="form">
+	<tr><td><?php echo $entry_email;?></td><td><input type="text" id="contribute-email" name="email_address" value="<?php echo $this->config->get('config_email');?>" style="width:98%;" /></td></tr>
+	<tr><td><?php echo $entry_contribute;?></td><td><input type="text" id="contribute-lang" name="subject" value="" style="width:98%;" /></td></tr>
+	<tr><td colspan="2"><textarea id="contribute" name="message" style="width:700px;height:200px;"><?php echo $contribute_file;?></textarea></td></tr></table>
+	<div style="float:right"><form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank" id="donate" style="display:inline;"><input type="hidden" name="cmd" value="_donations" /><input type="hidden" name="business" value="paypal@avanosch.nl" /><input type="hidden" name="lc" value="US" /><input type="hidden" name="item_name" value="vQModerator Appreciation Donation" /><input type="hidden" name="currency_code" value="USD" /><input type="hidden" name="bn" value="PP-DonationsBF:btn_donate_LG.gif:NonHosted" /><input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" style="border:0; position:relative; top:7px;" name="submit" alt="PayPal - The safer, easier way to pay online!" /><img alt="" border="0" src="https://www.paypalobjects.com/nl_NL/i/scr/pixel.gif" width="1" height="1" /></form> &nbsp; &nbsp; <button class="vqbutton contribute-this"><?php echo $button_contribute;?>!</button> &nbsp; <button class="vqbutton" onclick="$('#vqcontribute').dialog('close');"><?php echo $button_cancel;?></button></div>
+</div>
+<?php } ?>
 <script type="text/javascript">
 <?php if (!$vqconfig['text_style']) { ?>
 // Following line of code is minified Tabby 0.12
@@ -614,6 +625,65 @@ $('input[type="text"]', '.chmod').live('keyup', function() {
 });
 
 $(document).ready(function() {
+<?php if (isset($vqmod_contribute)) { ?>
+	$('.vqbutton').button();
+	// BOF - Contribute stuff
+	$('#contribute').data('orig', $('#contribute').val());
+	var contribute = CodeMirror.fromTextArea(document.getElementById('contribute'), {
+		mode: 'text/x-php',
+		matchBrackets: true,
+		indentUnit: 2,
+		indentWithTabs: true,
+		lineWrapping: true,
+		enterMode: "keep"
+	});
+	$('.contribute').click(function() {
+		$('#vqcontribute').dialog({
+			title: '<?php echo $button_contribute;?>',
+			autoOpen: true,
+			width: 800,
+			height: 600,
+			open: function() {
+				contribute.refresh();
+				var newheight = ($('#vqcontribute').innerHeight() - 330), mirror = $('#vqcontribute').find('.CodeMirror-scroll');
+				mirror.css('height', newheight);
+			},
+			resizeStop: function(event, ui) {
+				var newheight = (ui.size.height - ui.originalSize.height), mirror = $('#vqcontribute').find('.CodeMirror-scroll');
+				newheight += mirror.height();
+				mirror.animate({'height': newheight}, 300);
+			}
+		});
+	});
+	$('.contribute-this').click(function() {
+		contribute.save();
+		if ($('#contribute').val() == $('#contribute').data('orig')) {
+			$('#vqcontribute').find('.warning').fadeOut(300, function() { $(this).remove(); });
+			$('#vqcontribute').find('table.form').before('<div class="warning" style="display:none;"><?php echo $this->language->get('text_error_nochange');?></div>');
+			$('#vqcontribute').find('.warning').fadeIn(300);
+		} else {
+			$(this).button('disable').after('<img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" />');
+			$.ajax({
+				url: '<?php echo $vqmod_contribute;?>',
+				data: $('#contribute, #contribute-email, #contribute-lang'),
+				dataType: 'json',
+				type: 'POST',
+				success: function(data) {
+					$('.loading').fadeOut(300, function() { $(this).remove(); });
+					$('#vqcontribute').find('.warning, .success').fadeOut(300, function() { $(this).remove(); });
+					$('#vqcontribute').find('table.form').before('<div class="success" style="display:none;"></div><div class="warning" style="display:none;"></div>');
+					if (data['error']) {
+						$('#vqcontribute').find('.warning').append(data['error']).fadeIn(300);
+						$('.contribute-this').button('enable');
+					}
+					if (data['success']) $('#vqcontribute').find('.success').append(data['success']).fadeIn(300);
+				}
+			});
+		}
+	});
+	// EOF - Contribute stuff
+<?php } ?>
+
 	// Press shift to generate vQModifications
 	$(document).keydown(function(e) {
 		$(this).disableSelection();
@@ -780,7 +850,6 @@ $(document).ready(function() {
 	$('input[type="text"]', '.chmod').blur();
 
 	$('#vqloading').fadeOut('slow');
-<?php if ($vqconfig['text_style']) { ?>
 	var configCodeMirror = CodeMirror.fromTextArea(document.getElementById('manual_css'), {
 		height: "120px",
 		mode: 'css',
@@ -790,7 +859,6 @@ $(document).ready(function() {
 		lineWrapping: true,
 		enterMode: "keep"
 	});
-<?php } ?>
 	$('.vqmod-config').click(function() {
 		$('.warning, .success').fadeOut(300, function() { $('.warning, .success').remove(); });
 		$('#vqmod-config').dialog({
@@ -872,7 +940,7 @@ $(document).ready(function() {
 				}
 			}],
 			open: function() {
-				<?php if ($vqconfig['text_style']) { ?>configCodeMirror.refresh();<?php } ?>
+				configCodeMirror.refresh();
 				$('#button-set-vqmod').button('disable');
 			}
 		});
@@ -893,16 +961,17 @@ $(document).ready(function() {
 			});
 		};
 		t = setTimeout(checkdir, 800);
-	}).blur(function() {
+	}).focus(function() {
 		var vqd = $(this);
 		var value = $.trim(vqd.val());
 		if (value.indexOf('../vqmod/') != -1) value = value.replace('../vqmod', '');
-		value = value.replace('/', '') + '/';
+		value = value.split('/').join('') + '/';
 
 		vqd.val(value);
 		$(this).keyup();
-	});
-	$('.vqdir').blur();
+	}).blur(function() { $(this).focus(); });
+	$('.vqdir').keyup();
+
 <?php if ($vqmod_search_delay) { ?>
 	$('input[id^="search_"]').live('keyup', function() {
 		var sId = $(this).attr('id').split('_');
@@ -941,7 +1010,6 @@ $(document).ready(function() {
 		}
 	});
 <?php } ?>
-	$('.vqdir').blur();
 	$('input[name="show_trim"]').change(function() {
 		if ($(this).is(':checked')) {
 			$('.vqtrim').fadeIn();
@@ -977,7 +1045,7 @@ $(document).ready(function() {
 		$(this).val(value);
  		textHeight = value + 'px';
 <?php if ($vqconfig['text_style']) { ?>
-		$('.CodeMirror').animate({height: textHeight}, 800);
+		$('.CodeMirror-scroll').animate({height: textHeight}, 800);
 <?php } else { ?>
 		$('.vqtext').animate({height: textHeight}, 800);
 <?php } ?>
