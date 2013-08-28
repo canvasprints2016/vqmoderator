@@ -2,6 +2,6 @@ At the moment, we basically need translations for vQModerator.<br/>
 That's why the text area below is pre-filled with the language file.<br/>
 If you speak a language that is not yet supported, please edit the language file below, and press "Contribute!"<br/>
 * This requires that the email settings for this store are working!<br/>
-<small>You can also use the fields for sending other code snippets or messages.</small>
+<small>You can also use the fields for sending other code snippets, bug reports or messages.</small>
 ~|[SUBJECT:Language (or Subject)]|~
 ~|[FILE:admin/language/english/tool/vqmod.php]|~
