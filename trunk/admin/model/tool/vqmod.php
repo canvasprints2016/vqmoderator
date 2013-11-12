@@ -1,6 +1,6 @@
 <?php
 class ModelToolVqmod extends Model {
-	public $version = '1.1.3';
+	public $version = '1.1.4';
 	public $vqmver = 0;
 	public $vqm = '../vqmod/';
 	public $xml = '../vqmod/xml/';
@@ -21,6 +21,8 @@ class ModelToolVqmod extends Model {
 		$use_errors = libxml_use_internal_errors(true); // Save error setting
 		$dirfiles = glob($this->xml . '*.xml*');
 		$bakfiles = glob($vqm_backup . '*.xml*');
+		if (!$dirfiles) $dirfiles = array();
+		if (!$bakfiles) $bakfiles = array();
 		$dirfiles = array_merge($dirfiles, $bakfiles);
 		foreach ($dirfiles as $path) {
 			$status = true;
@@ -317,7 +319,6 @@ class ModelToolVqmod extends Model {
 			$abort = false;
 			$xml = simplexml_load_file($file);
 			if ($this->config->get('vqm_create') && isset($xml->newfile)) {
-				if (strpos($files, '|') !== false) $files = explode('|', $files);
 				foreach ($xml->newfile as $newfile) {
 					if (!isset($newfile['error'])) $newfile['error'] = 'abort';
 					if (!isset($newfile['mime'])) $newfile['mime'] = 'text';
@@ -562,7 +563,6 @@ class ModelToolVqmod extends Model {
 	// settings does 3 things: Save settings ($data = array), Get settings (!$data), and Save first Install (!$data && !$settings)
 	public function settings($posted = array()) {
 		$this->load->model('setting/setting');
-		$create = true;
 		if (!$posted || !is_array($posted)) {
 			$data = $this->model_setting_setting->getSetting('vqmod');
 		} else {
@@ -820,6 +820,11 @@ class ModelToolVqmod extends Model {
 
 							$output .= "\n\t\t\t" . '<add';
 							if (isset($data['trim'][$key][$key2]) && $data['trim'][$key][$key2]) $output .= ' trim="true"';
+							// Fix nested CDATA
+							if (strpos($data['add'][$key][$key2], '&lt;![CDATA[') !== false) {
+								$data['add'][$key][$key2] = str_replace(']]&gt;',']]]]&gt;&lt;![CDATA[&gt;', $data['add'][$key][$key2]);
+								$data['add'][$key][$key2] = str_replace(']]]]]]&gt;&lt;![CDATA[&gt;&lt;![CDATA[&gt;',']]]]&gt;&lt;![CDATA[&gt;', $data['add'][$key][$key2]);
+							}
 							$output .= '><![CDATA[' . $data['add'][$key][$key2]  . ']]></add>';
 							$output .= "\n\t\t" . '</operation>';
 
@@ -1142,7 +1147,7 @@ class ModelToolVqmod extends Model {
 			$vqmod . 'vqmod.php' => 'vqmod/vqmod.php',
 			$vqmod . 'install/ugrsr.class.php' => 'vqmod/install/ugrsr.class.php',
 			$vqmod . 'install/index.php' => $this->vqopcrt . 'install/index.php',
-			$vqmod . 'xml/vqmod_opencart.xml' => $this->vqopcrt . 'xml/vqmod_opencart.xml',
+			$vqmod . 'xml/vqmod_opencart.xml' => $this->vqopcrt . 'xml/vqmod_opencart.xml'
 		);
 		foreach ($files as $local => $remote) {
 			$remote = $this->vqtrunk . $remote;
