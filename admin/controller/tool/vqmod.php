@@ -34,7 +34,15 @@ class ControllerToolVqmod extends Controller {
 		// Check if vQMod is installed (and get settings from vQMod)
 		$VQMODVER = 0;
 		if (class_exists('VQMod')) {
-			$VQMODVER = VQMod::$_vqversion;
+			// Use Reflection in case $_vqversion is private
+			$reflectionClass = new ReflectionClass("VQMod");
+			if ($reflectionClass->isAbstract()) {
+				$VQMODVER = VQMod::$_vqversion;
+			} else {
+				$property = $reflectionClass->getProperty("_vqversion");
+				$property->setAccessible(true);
+				$VQMODVER = $property->getValue(new VQMod);
+			}
 			$log_file = property_exists('VQMod', 'logFolder') ? VQMod::$logFolder : (property_exists('VQMod', 'logFilePath') ? VQMod::$logFilePath : false);
 			if ($log_file && property_exists('VQMod', 'logFileName')) $log_file .= VQMod::$logFileName;
 			$vqm_cache = property_exists('VQMod', 'vqCachePath') ? VQMod::$vqCachePath : false;
@@ -192,6 +200,7 @@ class ControllerToolVqmod extends Controller {
 				$this->data['heading_title'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-install vqmoderator">(' . $vqm_lang . ')</small>';
 			}
 			if ($this->data['install'] === 2) $this->data['install'] = 3;
+			if (!$this->data['install']) $this->data['install'] = 1;
 			$updated = false;
 		}
 		
@@ -201,12 +210,56 @@ class ControllerToolVqmod extends Controller {
 		if ($vq_ver > (int)str_replace('.', '', $VQMODVER)) {
 			$this->data['column_vqmver'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;" class="vqmod-install vqm-update">(' . $this->language->get('text_update_found') . $vq_version . ')</small>';
 			if ($this->data['install'] === 1) $this->data['install'] = 3;
+			if (!$this->data['install']) $this->data['install'] = 2;
 			$updated = false;
 		}
 		if (isset($this->request->get['checkup']) && $updated) {
 			$this->session->data['success'] = (isset($this->session->data['success']) ? '<br/>' : '') . $this->language->get('text_no_updates');
 			$this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
 		}
+		// Check update-servers access, and write permissions before updating
+		if ($this->data['install'] && $this->data['install'] != 'continue') {
+			if ($this->data['install'] > 1) {
+				$server = $this->model_tool_vqmod->vqtrunk . 'vqmod/vqmod.php';
+				if (!$this->model_tool_vqmod->isRemoteFile($server)) {
+					if ($warning) $warning .= '<br/>';
+					$warning .= $this->language->get('error_vqmod_server');
+				} else {
+					$success = $this->model_tool_vqmod->createFile($this->model_tool_vqmod->vqm . 'vqWriteTest.txt', 'Delete me!', 'text', 0755);
+					$this->model_tool_vqmod->deleteFile($this->model_tool_vqmod->vqm . 'vqWriteTest.txt');
+					if ($success) $success = $this->model_tool_vqmod->createFile($this->model_tool_vqmod->vqm . 'install/vqWriteTest.txt', 'Delete me!', 'text', 0755);
+					$this->model_tool_vqmod->deleteFile($this->model_tool_vqmod->vqm . 'install/vqWriteTest.txt');
+					if ($success) $success = $this->model_tool_vqmod->createFile($this->model_tool_vqmod->vqm . 'xml/vqWriteTest.txt', 'Delete me!', 'text', 0755);
+					$this->model_tool_vqmod->deleteFile($this->model_tool_vqmod->vqm . 'xml/vqWriteTest.txt');
+					if (!$success) {
+						if ($warning) $warning .= '<br/>';
+						$warning .= $this->language->get('error_vqmod_write');
+					}
+				}
+			}
+			if ($this->data['install'] != 2) {
+				$server = $this->model_tool_vqmod->vqmtrunk . 'admin/controller/tool/vqmod.php';
+				if (!$this->model_tool_vqmod->isRemoteFile($server)) {
+					if ($warning) $warning .= '<br/>';
+					$warning .= $this->language->get('error_update_server');
+				} else {
+					$success = $this->model_tool_vqmod->createFile('../admin/controller/tool/vqWriteTest.txt', 'Delete me!', 'text', 0755);
+					$this->model_tool_vqmod->deleteFile('../admin/controller/tool/vqWriteTest.txt');
+					if ($success) $success = $this->model_tool_vqmod->createFile('../admin/language/english/tool/vqWriteTest.txt', 'Delete me!', 'text', 0755);
+					$this->model_tool_vqmod->deleteFile('../admin/language/english/tool/vqWriteTest.txt');
+					if ($success) $success = $this->model_tool_vqmod->createFile('../admin/model/tool/vqWriteTest.txt', 'Delete me!', 'text', 0755);
+					$this->model_tool_vqmod->deleteFile('../admin/model/tool/vqWriteTest.txt');
+					if ($success) $success = $this->model_tool_vqmod->createFile('../admin/view/template/tool/vqWriteTest.txt', 'Delete me!', 'text', 0755);
+					$this->model_tool_vqmod->deleteFile('../admin/view/template/tool/vqWriteTest.txt');
+					if (!$success) {
+						if ($warning) $warning .= '<br/>';
+						$warning .= $this->language->get('error_update_write');
+					}
+				}
+			}
+		}
+		if ($warning) $this->error['warning'] = $warning;
+
 		$this->data['column_author'] = $this->language->get('column_author');
 		$this->data['column_action'] = $this->language->get('column_action');
 
@@ -263,6 +316,7 @@ class ControllerToolVqmod extends Controller {
 				$this->data['log_files'][] = $log_file;
 			} else {
 				$dirfiles = glob($log_file . '*.log');
+				if (!$dirfiles) $dirfiles = array();
 				foreach ($dirfiles as $path) $this->data['log_files'][basename($path)] = 'vQMod: ' . substr(basename($path),0,-4);
 			}
 		}
@@ -699,6 +753,7 @@ class ControllerToolVqmod extends Controller {
 					$file = $this->config->get('log_file');
 					$type = 'text/plain';
 				} else {
+					$this->load->model('tool/vqmod');
 					$file = (substr($filename,-4) == '.bak' ? $this->config->get('vqm_backup') : $this->model_tool_vqmod->xml) . $filename;
 					$type = 'text/xml';
 				}
@@ -712,7 +767,7 @@ class ControllerToolVqmod extends Controller {
 				$this->response->addheader("Content-length: " . filesize($file));
 				$this->response->addheader("Cache-control: private");
 
-				$this->response->setOutput(readfile($file));
+				$this->response->setOutput(file_get_contents($file));
 			}
 		} else {
 			return $this->forward('error/permission');
@@ -743,7 +798,7 @@ class ControllerToolVqmod extends Controller {
 			$this->response->addheader('Content-Type: application/zip');
 			$this->response->addheader('Content-Disposition: attachment; filename=vqmods_backup_' . date('Y-m-d') . '.zip');
 			$this->response->addheader('Content-Transfer-Encoding: binary');
-			$temp = readfile($zipped);
+			$temp = file_get_contents($zipped);
 			@unlink($zipped);
 
 			$this->response->setOutput($temp);

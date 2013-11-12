@@ -1,23 +1,23 @@
 <?php
 // Heading
 $_['heading_title']			= 'vQModerator';
-$_['heading_editor']		= 'vQMod Editor';
+$_['heading_editor']		= 'Редактор vQMod';
 
 // Columns
-$_['column_name']			= 'Extension Name';
-$_['column_version']		= 'Extension Version';
-$_['column_vqmver']			= 'vQMod Version';
-$_['column_author']			= 'Author';
-$_['column_action']			= 'Action';
+$_['column_name']			= 'Название дополнения';
+$_['column_version']		= 'Версия дополнения';
+$_['column_vqmver']			= 'Версия vQMod';
+$_['column_author']			= 'Автор';
+$_['column_action']			= 'Действие';
 
 // Text
-$_['text_version']			= 'version ';
-$_['text_vqmod_log']		= 'vQMod Log File Viewer';
-$_['text_vqmod_config']		= 'vQModerator Settings';
+$_['text_version']			= 'версия ';
+$_['text_vqmod_log']		= 'Просмотр лог-файла vQMod';
+$_['text_vqmod_config']		= 'Настройки vQModerator';
 $_['text_vqmod_version']	= ' (You are @ vQMod v%s)';
 $_['text_update_found']		= 'Update found! v';
 $_['text_language_found']	= 'New Language found: ';
-$_['text_success']			= 'vQModerator Settings Saved!';
+$_['text_success']			= 'Настроки vQModerator сохранены!';
 $_['text_success_takeover']	= 'Successfully Copied vQModerator from googlecode.com repository to all OpenCart Local folders!<br/>You\'ll still have to set permissions and Install for each OpenCart!';
 $_['text_not_installed']	= 'Not Installed!';
 $_['text_no_updates']		= 'You are totally up-to-date!';
@@ -53,9 +53,7 @@ $_['text_vqmod_uploads']	= 'Select a vQMod XML file to upload to your store.<br/
 $_['text_vqmod_exists']		= 'XML file already Installed!';
 $_['text_vqmod_uninstall']	= 'The uploaded XML file already exists, and seems to be installed.<br/>Would you like to continue, or un-install it first?';
 $_['text_backup_file']		= ' - [BaCkUp FiLe]';
-$_['text_found_backup']		= 'Found Backup-file "%s" in your XML Folder --> ';
-$_['text_moved_backup']		= 'Moved to Backup Folder!';
-$_['text_moved_xml']		= 'Moved to XML Folder!';
+$_['text_moved_backup']		= 'Found Backup-file "%s" in your XML Folder. Moved to Backup Folder!';
 $_['text_xml_install']		= '<img src="view/image/attention.png" alt="Install" title="Uninstalled! Install?" />';
 $_['text_xml_uninstall']	= '<img src="view/image/success.png" alt="Uninstall" title="Installed! Uninstall?" />';
 $_['text_xml_invalid']		= '<img src="view/image/delete.png" alt="Invalid!" title="XML File is invalid!" />';
@@ -65,14 +63,14 @@ $_['text_xml_delete']		= '<img src="view/image/delete.png" alt="Delete" title="D
 $_['text_xml_new']			= '<img src="view/image/add.png" alt="Start New vQMod" title="Start New vQMod" />';
 $_['text_collapse']			= 'Collapse ';
 $_['text_expand']			= 'Expand ';
-$_['text_this_file']		= 'this file';
+$_['text_this_file']		= 'этот файл';
 $_['text_this_operation']	= 'this operation';
-$_['text_all_files']		= 'All files';
-$_['text_sort']				= 'Sort by:';
-$_['text_name_asc']			= 'Name A-Z';
-$_['text_name_desc']		= 'Name Z-A';
+$_['text_all_files']		= 'Все файлы';
+$_['text_sort']				= 'Сортировать по:';
+$_['text_name_asc']			= 'Имя A-Z';
+$_['text_name_desc']		= 'Имя Z-A';
 $_['text_type_asc']			= 'Type Rev.';
-$_['text_type_desc']		= 'Type';
+$_['text_type_desc']		= 'Тип';
 $_['text_takeover']			= 'OpenCart Local Detected!<br/>'.
 	'Do you want vQModerator to <a href="#" id="takeover" onclick="return false;">overtake on compatible versions</a>?<br/>'.
 	'This will update the index page (one login for all carts), copy vQModerator, and remove vQGen.<br/>'.
@@ -131,28 +129,28 @@ $_['text_search_found']		= 'Seach found <b>%s</b> times.';
 $_['text_search_not_found']	= 'File <b>not</b> found!!';
 
 // Buttons
-$_['button_config']			= 'Settings';
-$_['button_update']			= 'Update vQModerator';
-$_['button_update_vqmod']	= 'Update vQMod';
-$_['button_update_check']	= 'Check for Updates';
+$_['button_config']			= 'Настройки';
+$_['button_update']			= 'Обновить vQModerator';
+$_['button_update_vqmod']	= 'Обновить vQMod';
+$_['button_update_check']	= 'Проверить обновления';
 $_['button_log']			= 'vQMod Log';
-$_['button_log_clear']		= 'Clear Log';
-$_['button_log_delete']		= 'Delete Log';
-$_['button_log_download']	= 'Download Log';
-$_['button_continue']		= 'Continue';
-$_['button_backup']			= 'Backup Original';
-$_['button_install_all']	= 'Install All';
-$_['button_uninstall']		= 'Uninstall';
-$_['button_uninstall_all']	= 'Uninstall All';
-$_['button_generate_go']	= 'Save & Continue';
-$_['button_generate_xml']	= 'Generate XML';
+$_['button_log_clear']		= 'Очистить Log';
+$_['button_log_delete']		= 'Удалить Log';
+$_['button_log_download']	= 'Загрузить Log';
+$_['button_continue']		= 'Продолжить';
+$_['button_backup']			= 'Резервная копия';
+$_['button_install_all']	= 'Установить всё';
+$_['button_uninstall']		= 'Удалить';
+$_['button_uninstall_all']	= 'Удалить всё';
+$_['button_generate_go']	= 'Сохранить & Продолжить';
+$_['button_generate_xml']	= 'Генерировать XML';
 $_['button_generate_html']	= 'Generate Manual';
 $_['button_add_operation']	= 'Add a new operation';
 $_['button_add_file']		= 'Add a file to edit';
 $_['button_add_newfile']	= 'Add a new file';
 $_['button_restart']		= 'Start Over';
-$_['button_set_vqmod']		= 'vQMod Settings';
-$_['button_set_editor']		= 'XML Editor';
+$_['button_set_vqmod']		= 'Настройки vQMod';
+$_['button_set_editor']		= 'Редактор XML';
 $_['button_set_manual']		= 'HTML Manual';
 $_['button_contribute']		= 'Contribute';
 
@@ -188,10 +186,10 @@ $_['entry_newfile_error']	= 'On Error:<span class=\"help\">Update/Overwrite is a
 $_['entry_newfile_exist']	= 'If Exists:<span class=\"help\">Wat to do if the file exists</span>';
 $_['entry_newfile_chmod']	= 'Chmod Setting:<span class=\"help\">Write permissions for new file</span>';
 $_['entry_newfile_skip']	= 'Skip File';
-$_['entry_newfile_update']	= 'Update File';
-$_['entry_newfile_delete']	= 'Delete File';
+$_['entry_newfile_update']	= 'Обновить файл';
+$_['entry_newfile_delete']	= 'Удалить файл';
 $_['entry_remove']			= 'Remove on Generate';
-$_['entry_add']				= 'Add ';
+$_['entry_add']				= 'Добавить ';
 $_['entry_after_this']		= 'New operation(s) after this one [<a class=\"generate newop\" style=\"color:red;\">Now!</a>]';
 $_['entry_skip']			= 'Skip don\'t Log';
 $_['entry_log']				= 'Skip &amp; Log';
@@ -261,7 +259,6 @@ $_['success_install_vqmoder1']	= 'Successfully created my own installation file:
 $_['success_install_vqmoder2']	= 'Successfully Re-created my own installation file: vQModerator.xml!';
 $_['success_reload']		= '<br />Click <a href="%s" id="redirect-me" data-time="10">here to reload</a>';
 $_['error_installation']	= 'Warning: vQModerator not Fully installed! Please <a href="#" class="vqmod-install vqmoderator" onclick="return false;">Update vQModerator</a>!';
-$_['error_backup_folder']	= 'Warning: Your backup folder settings (<b>%s</b>) are wrong! Please edit your <a href="#" class="vqmod-config" onclick="return false;">Settings</a>.';
 $_['error_vqmod_folders']	= 'Warning: vQMod installed, but something is wrong with the <a href="#" class="vqmod-config" onclick="return false;">folder settings</a>!<br/>Click <a href="#" class="vqmod-install" onclick="return false;">here</a> to re-install vQMod with the folder settings.<br/>';
 $_['error_vqmod_install']	= 'Warning: vQMod found, but not installed! Click <a href="#" class="vqmod-install" onclick="return false;">here</a> to update and install vQMod.<br/>';
 $_['error_vqmod_server']	= 'Warning: vQMod update-server not available! Please <a href="http://www.vqmod.com/" target="_blank">install/update vQMod manually.</a><br/>';
