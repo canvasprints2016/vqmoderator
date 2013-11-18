@@ -1,3 +1,13 @@
+1.1.5
+- Bugfix: If a too old vQMod version was already installed, the (install-)script would fail
+- Added: Extension filter (Thanks to: oputz (Frank) for the initial code)
+- Added: Download/Delete Generated HTML Manuals
+- Added: If autosave is set, it will be restarted after "Add New operation after this one"
+- Added: After "Add New operation after this one", page will scroll to the first new operation.
+- Added: Expand/Collapse all Operations of a file
+- Simplified installation routine, and added better error reporting
+- Commented out "Generate all vQMods" from Editor page (interferes with editing)
+- Various other small bugfixes
 1.1.4
 - Bugfix: array_merge error messages (folder settings incomplete?)
 - Bugfix: Download function not working
