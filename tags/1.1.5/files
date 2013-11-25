@@ -1,0 +1,9 @@
+admin/controller/tool/vqmod.php
+admin/language/english/tool/vqmod.php
+admin/model/tool/vqmod.php
+admin/view/image/loading.png
+admin/view/image/saved.png
+admin/view/javascript/codemirror.js
+admin/view/stylesheet/vqmod.css
+admin/view/template/tool/vqmod.tpl
+admin/view/template/tool/vqmod_edit.tpl

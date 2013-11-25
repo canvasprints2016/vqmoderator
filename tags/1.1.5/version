@@ -1,0 +1,55 @@
+1.1.5
+- Bugfix: If a too old vQMod version was already installed, the (install-)script would fail
+- Added: Extension filter (Thanks to: oputz (Frank) for the initial code)
+- Added: Download/Delete Generated HTML Manuals
+- Added: If autosave is set, it will be restarted after "Add New operation after this one"
+- Added: After "Add New operation after this one", page will scroll to the first new operation.
+- Added: Expand/Collapse all Operations of a file
+- Simplified installation routine, and added better error reporting
+- Commented out "Generate all vQMods" from Editor page (interferes with editing)
+- Various other small bugfixes
+1.1.4
+- Bugfix: array_merge error messages (folder settings incomplete?)
+- Bugfix: Download function not working
+- Bugfix: Checking older vQMod versions could cause errors
+- Bugfix: Nested CDATA tags would break the xml.
+- Added Check for write-permissions, and update-server status
+- Added Russian translation (Thanks to: "Все Авто Запчасти" http://aa-driver.ru/)
+1.1.3
+- Bugfix: Editor "Search in File" was broken
+- Added slightly better faulty backup-folder detection...
+1.1.2
+- Added: Automatic Language Support (No languages yet though...)
+- Added: Contribute Dialog (help make vQModerator even better)
+- <b>Please contribute, and send your translation!</b> (see Settings --> Contribute)
+- Fixed: Changing backup folder will move backups to new folder, and remove old folder
+- Bugfix: Backup path was not displayed/saved correctly
+- Some other small bugfixes
+1.1.1
+- Totally overhauled the installation/update procedure
+- Removed vQMod folder settings (no longer needed)
+- Fixed: Renaming a file would create a new one
+- Fixed: Autocomplete added a slash when entering multiple files
+- Fixed: Changed editor arrow color (more visible)
+- Some small bugfixes
+1.1.0
+- Added: Autocomplete and Search now support multiple wildcards (*)
+- Added: File/Path fields auto-correct wrong slashes
+- Fixed: Generating all modification files skipped wildcard entries
+- Some small bugfixes
+1.0.9
+- Added: File Filter, to show only vQModdable files
+- Added: "OpenCart Local" detection/adjustment (by UKSB)
+- Added: Changelog depending on installed version
+1.0.8
+<b>You'll probably have to Update Twice!</b>
+- Added: Holding [SHIFT] will allow you to generate all modification files.
+- Added: Testing against already vQModded files (using above).
+- Added: If you changed your admin folder, vQModerator will also adjust vQMod with your change.
+- Some small bugfixes.
+1.0.7
+- Bugfix: Installation check (minor bug)
+- Fixed: Detect admin folder (if custom name is used)
+- Added: XML Backup Folder
+- Added: Filter XML files by: Enabled/Disabled/Backup
+- Added: Sort XML files by name or type
