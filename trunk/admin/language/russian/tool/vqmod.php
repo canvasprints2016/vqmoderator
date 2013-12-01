@@ -277,6 +277,8 @@ $_['error_vqmod_server']	= 'Warning: vQMod update-server not available! Please <
 $_['error_vqmod_write']		= 'Warning: Could not write vQMod files! Please check these folders permissions and ownership:';
 $_['error_update_server']	= 'Warning: vQModerator update-server not available! Please <a href="http://www.vqmoderator.com/" target="_blank">update vQModerator manually.</a>';
 $_['error_update_write']	= 'Warning: Could not write vQModerator files! Please check these folders permissions and ownership:';
+$_['error_ftp_enable']		= 'Please try with FTP (use settings page to configure FTP).';
+$_['error_ftp_settings']	= "Received FTP Error: %sPlease check your FTP settings!";
 $_['error_write_user']		= 'The user <b>%s</> must have write permissions.';
 $_['error_vqmod_missing']	= '<ul><li>Could not find vQMod on your system!</li>
 	<li>Click <a href="%s" class="vqmod-install" onclick="return false;">here</a> to Download and Install vQMod directly.</li>

@@ -365,12 +365,18 @@ $(document).ready(function() {
 	$('.vqmod-install').click(function() {
 		url = $(this).prop('href');
 		if (url && url !== 'undefined' && url !== '#' && url !== '') {
-			$('.success, .warning').fadeOut(300, function() {
-				$('.success, .warning').remove();
+			if ($('.success, .warning').length === 0) {
 				$('.breadcrumb').after('<div class="success" style="display:none;"><div id="installoader"><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /></div></div><div class="warning" style="display:none;"></div>');
 				$('.success').fadeIn(300);
 				install(url);
-			});
+			} else {
+				$('.success, .warning').fadeOut(300, function() {
+					$('.success, .warning').remove();
+					$('.breadcrumb').after('<div class="success" style="display:none;"><div id="installoader"><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /><img src="view/image/loading.gif" class="loading" style="padding-left: 5px;" /></div></div><div class="warning" style="display:none;"></div>');
+					$('.success').fadeIn(300);
+					install(url);
+				});
+			}
 		}
 	});
 

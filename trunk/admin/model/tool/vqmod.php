@@ -1,7 +1,9 @@
 <?php
 class ModelToolVqmod extends Model {
-	public $version = '1.1.5';
+	public $version = '1.1.6';
 	private $vqmver = 0;
+	private $ftp_connection = false;
+	private $hideError = false;
 	public $vqm = '../vqmod/';
 	public $xml = '../vqmod/xml/';
 	public $vqtrunk = 'http://vqmod.googlecode.com/svn/trunk/';
@@ -240,16 +242,16 @@ class ModelToolVqmod extends Model {
 
 	public function deleteFile($file, $log = true, $files = false) {
 		if (file_exists($file)) {
-			if (@unlink($file)) {
+			if ($this->doDelete($file)) {
 				if (substr($file, -4) == '.xml') {
 					$file = str_replace($this->xml, $this->config->get('vqm_manual'), substr($file, 0, -3)) . 'html';
-					if (file_exists($file)) @unlink($file);
+					if (file_exists($file)) $this->doDelete($file);
 					$this->deleteAll('cache');
 				}
 				if ($files && strpos($files, '|') !== false) {
 					$files = explode('|', $files);
 					foreach ($files as $dir) {
-						if (file_exists('../' . $dir)) @unlink('../' . $dir);
+						if (file_exists('../' . $dir)) $this->doDelete('../' . $dir);
 					}
 				}
 			} else {
@@ -264,14 +266,14 @@ class ModelToolVqmod extends Model {
 		if ($dir == 'cache') {
 			$dir = $this->config->get('vqm_cache');
 			if (file_exists($this->vqm . 'mods.cache')) {
-				@unlink($this->vqm . 'mods.cache');
+				$this->doDelete($this->vqm . 'mods.cache');
 			}
 		}
 		if (file_exists($dir) && is_dir($dir)) {
 			if ($echo) echo "Trying to Delete: " . $dir . $files . "<br/>";
 			$dirfiles = glob($dir . $files);
 			if ($dirfiles) {
-				foreach ($dirfiles as $file) @unlink($file);
+				foreach ($dirfiles as $file) $this->doDelete($file);
 			}
 		}
 		return true;
@@ -284,11 +286,21 @@ class ModelToolVqmod extends Model {
 		if (!$files || $force) {
 			foreach ($files as $file) {
 				if (is_dir($file)) $this->delTree($file);
-				else unlink($file);
+				else $this->doDelete($file);
 			}
 			return rmdir($dir);
 		}
 		return false;
+	}
+
+	private function doDelete($file) {
+		if ($this->ftp_connection) {
+			$base = str_replace('/system', '', DIR_SYSTEM);
+			$file = str_replace($base, '', str_replace('../', '', $file));
+			return ftp_delete($this->ftp_connection, $file);
+		} else {
+			return unlink($file);
+		}
 	}
 
 	public function disableFile($file, $log = true, $files = 'all') {
@@ -431,7 +443,13 @@ class ModelToolVqmod extends Model {
 		foreach ($directories as $directory) {
 			$path = $path . '/' . $directory;
 			if (!file_exists($path)) {
-				@mkdir($path, $chmod);
+				if ($this->ftp_connection && strpos($path, '../../') === false) {
+					$base = str_replace('/system', '', DIR_SYSTEM);
+					$path = str_replace($base, '', str_replace('../', '', $path));
+					if (!ftp_mkdir($this->ftp_connection, $path)) return false;
+				} else {
+					if (!mkdir($path, $chmod)) return false;
+				}
 			}
 			if (!is_writable($path)) {
 				$reset[$path] = $this->setPermission($path);
@@ -460,7 +478,13 @@ class ModelToolVqmod extends Model {
 		if (file_exists($old)) {
 			if (!file_exists($new)) $this->createFile($new);
 			$time = filemtime($old);
-			if (rename($old, $new)) { // Rename orinal
+			if ($this->ftp_connection) {
+				$base = str_replace('/system', '', DIR_SYSTEM);
+				$renamed = ftp_rename($this->ftp_connection, str_replace($base, '', str_replace('../', '', $old)), str_replace($base, '', str_replace('../', '', $new)));
+			} else {
+				$renamed = rename($old, $new);
+			}
+			if ($renamed) {
 				if ($time) touch($new, $time); // Set Original Modification time back
 				return true;
 			}
@@ -468,22 +492,78 @@ class ModelToolVqmod extends Model {
 		return false;
 	}
 
+	// Use an FTP connection when chmodding/creating files (Should prevent permission errors)
+	// Sets "$this->ftp_connection" to the connection, or "false" when not connected
+	// Functions use "$this->ftp_connection" for file actions (or PHP functions when no connection)
+	// Returns "true" on success, "false" or "error string" when not connected
+	public function setFTP($set = true) { // No Set = close connection
+		// Catch warnings (for Permissions and file creation)
+		set_error_handler(array($this, 'warningHandler'), E_WARNING);
+		$this->hideError = ($set && $set !== true);
+		if ($this->config->get('config_ftp_status') && function_exists('ftp_connect') && $set) {
+			$this->ftp_connection = ftp_connect($this->config->get('config_ftp_host'), $this->config->get('config_ftp_port'));
+			if (!$this->ftp_connection) {
+				return "Couldn't connect to FTP Server @ " . $this->config->get('config_ftp_host') . ":" . $this->config->get('config_ftp_port') . "\n";
+			}
+			$login = ftp_login($this->ftp_connection, $this->config->get('config_ftp_username'), $this->config->get('config_ftp_password'));
+			if (!$login) {
+				ftp_close($this->ftp_connection);
+				$this->ftp_connection = false;
+				return "Couldn't connect as " . $this->config->get('config_ftp_username') . "\n";
+			}
+			// turn passive mode on
+			ftp_pasv($this->ftp_connection, true);
+			if ($this->config->get('config_ftp_root')) {
+				$root = ftp_chdir($this->ftp_connection, $this->config->get('config_ftp_root'));
+				if (!$root) {
+					ftp_close($this->ftp_connection);
+					$this->ftp_connection = false;
+					return "Couldn't change to directory " . $this->config->get('config_ftp_root') . "\n";
+				}
+			}
+			$contents = ftp_nlist($this->ftp_connection, ".");
+			// Check if we're in the correct folder
+			if (!$contents || !in_array('index.php', $contents) || !in_array('config.php', $contents) || !in_array('system', $contents)) {
+				ftp_close($this->ftp_connection);
+				$this->ftp_connection = false;
+				return "Wrong root folder!";
+			}
+			return ($this->ftp_connection) ? true : false;
+		} else {
+			$closed = ($this->ftp_connection && !$set) ? ftp_close($this->ftp_connection) : true;
+			$this->ftp_connection = false;
+			return $closed;
+		}
+	}
+
 	public function setPermission($file, $set = false) { // No Set = make writable, and return orignal setting
 		if (!file_exists($file)) return false;
+		$base = str_replace('/system', '', DIR_SYSTEM);
 		$perms = fileperms($file);
-		if (!$set || $set >= 0755) {
+		if (!$set) {
 			if (!is_writable($file)) {
-				chmod($file, 0777);
-			}
-			if (!is_writable($file)) {
-				chmod($file, $perms);
-				return false;
+				if ($this->ftp_connection) {
+					$file = str_replace($base, '', str_replace('../', '', $file));
+					ftp_chmod($this->ftp_connection, 0777, $file);
+				} else {
+					chmod($file, 0777);
+				}
 			}
 		} elseif ($set != $perms) {
-			chmod($file, $set);
+			if ($this->ftp_connection) {
+				$file = str_replace($base, '', str_replace('../', '', $file));
+				ftp_chmod($this->ftp_connection, $set, $file);
+			} else {
+				chmod($file, $set);
+			}
 		}
 
-		return $perms;
+		return substr(decoct($perms), 2);
+	}
+
+	// Suppress errors (when chmodding, for example)
+	private function warningHandler($errno, $errstr) {
+		if (!isset($this->hideError) || !$this->hideError) echo "Error #$errno occured: $errstr\n";
 	}
 
 	public function getTree($path = '../', $file = '', $files = true, $exts = array('php', 'tpl')) {
@@ -681,8 +761,8 @@ class ModelToolVqmod extends Model {
 					$html .='  </table>'."\n";
 					if ($edit_id == 'set-vqmod') {
 						$html .= '  <div id="update-buttons" style="float:right"><a href="' . str_replace('&amp;', '&', $this->url->link('tool/vqmod', 'checkup=1&token=' . $this->session->data['token'], 'SSL')) . '" class="vqbutton">' . $this->language->get('button_update_check') . '</a>'.
-								'&nbsp; &nbsp; &nbsp; <a href="' . str_replace('&amp;', '&', $this->url->link('tool/vqmod/vqinstall', 'install=vq&token=' . $this->session->data['token'], 'SSL')) . '" class="vqbutton vqmod-install">' . $this->language->get('button_update_vqmod') . '</a>'.
-								'&nbsp; <a href="' . str_replace('&amp;', '&', $this->url->link('tool/vqmod/vqinstall', 'install=vqm&token=' . $this->session->data['token'], 'SSL')) . '" class="vqbutton vqmod-install">' . $this->language->get('button_update') . '</a>'."\n  </div>\n";
+								'&nbsp; &nbsp; &nbsp; <a href="' . str_replace('&amp;', '&', $this->url->link('tool/vqmod/vqinstall', 'install=vq&token=' . $this->session->data['token'], 'SSL')) . '" class="vqbutton vqmod-install" onclick="return false;">' . $this->language->get('button_update_vqmod') . '</a>'.
+								'&nbsp; <a href="' . str_replace('&amp;', '&', $this->url->link('tool/vqmod/vqinstall', 'install=vqm&token=' . $this->session->data['token'], 'SSL')) . '" class="vqbutton vqmod-install" onclick="return false;">' . $this->language->get('button_update') . '</a>'."\n  </div>\n";
 					}
 				}
 			}
@@ -1337,9 +1417,9 @@ class ModelToolVqmod extends Model {
 		// Set and Save permissions
 		$admin = basename(DIR_APPLICATION);
 		$chmods = array(
-			'../index.php' => $this->setPermission('../index.php', 0755),
-			'../' . $admin => $this->setPermission('../' . $admin, 0755),
-			'./index.php' => $this->setPermission('./index.php', 0755)
+			'../index.php' => $this->setPermission('../index.php'),
+			'../' . $admin . '/' => $this->setPermission('../' . $admin . '/'),
+			'../' . $admin . '/index.php' => $this->setPermission('../' . $admin . '/index.php')
 		);
 		$response = file_get_contents(HTTP_CATALOG . str_replace('../', '', $this->vqm) . 'install/index.php');
 

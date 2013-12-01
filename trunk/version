@@ -1,3 +1,12 @@
+1.1.6
+- <b>BROKEN UPDATE LINK! ONLY WORKS WITH <i>Success</i>/<i>Error</i>!
+ &nbsp; To update, enable or disable an extension first!</b>
+- Bugfix: Fixed broken update links & buttons
+- Bugfix: Setting back previous file permissions would fail
+- Added: FTP support (OpenCart >= 1.5.5.1, only if FTP enabled in admin)
+- Added: Better error handling when modifying/creating/deleting files
+- Now using FTP to set file permissions, make directories and delete files
+- Some tiny bugfixes
 1.1.5
 - Bugfix: If a too old vQMod version was already installed, the (install-)script would fail
 - Added: Extension filter (Thanks to: oputz (Frank) for the initial code)

@@ -62,7 +62,7 @@
 		  <div style="width:34%;text-align:center;display:inline-block;margin-top:10px;"><a id="generatexml"class="button"><?php echo $button_generate_xml;?></a><input name="generatexml" type="hidden" value="0" /></div>
 
           <div style="width:33%;display:inline-block;margin-top:10px;"><a class="button add_fi" style="background-color:green;"><?php echo $button_add_file;?></a></div>
-		  <div style="width:34%;text-align:center;display:inline-block;margin-top:10px;"><a id="generatehtml" class="button"><?php echo $button_generate_html;?></a><input name="generatehtml" type="hidden" value="<?php echo ($vqconfig['generate_html']) ? '0' : '1';?>" /></div>
+		  <div style="width:34%;text-align:center;display:inline-block;margin-top:10px;"><a id="generatehtml" class="button"><?php echo $button_generate_html;?></a><input name="generatehtml" type="hidden" value="<?php echo ($this->config->get('generate_html')) ? '0' : '1';?>" /></div>
 
           <div style="width:100%;display:inline-block;margin-top:10px;"><a class="button add_new" style="background-color:#420080;"><?php echo $button_add_newfile;?></a></div>
 
