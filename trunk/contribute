@@ -1,7 +1,13 @@
-At the moment, we basically need translations for vQModerator.<br/>
+We really need a user manual.<br/>
+vQModerator has grown so much, and has accumulated quite a lot of (un-documented) functions and uses.<br/>
+Everything is mentioned in the changelog, but there's no real user manual.<br/>
+I'm a pretty busy man, and maintaining about 10 contributions (next to my day-job) is a lot of work.<br/>
+Please help the community out, and contribute to the <a href="http://code.google.com/p/vqmoderator/w/list" target="_blank">vQModerator GoogleCode Wiki</a>.<br/>
+If you don't have (or want) a google account, you can also send your contribution using the form below.<br/><br/>
+Also, we always need translations for vQModerator.<br/>
 That's why the text area below is pre-filled with the language file.<br/>
 If you speak a language that is not yet supported, please edit the language file below, and press "Contribute!"<br/>
 * This requires that the email settings for this store are working!<br/>
-<small>You can also use the fields for sending other code snippets, bug reports or messages.</small>
+<small>You can also use the fields for sending other code snippets, bug reports or other messages.</small>
 ~|[SUBJECT:Language (or Subject)]|~
 ~|[FILE:admin/language/english/tool/vqmod.php]|~
