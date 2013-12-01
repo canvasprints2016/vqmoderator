@@ -160,7 +160,7 @@ $_['button_restart']		= 'Start Over';
 $_['button_set_vqmod']		= 'Настройки vQMod';
 $_['button_set_editor']		= 'Редактор XML';
 $_['button_set_manual']		= 'HTML Manual';
-$_['button_contribute']		= 'Contribute';
+$_['button_contribute']		= 'Contribute/Report Bug';
 
 // Entry
 $_['entry_update']			= 'Check Online vQMod<i>erator</i> Updates:<span class="help">Every <i>x</i> hours. (Set to <i>0</i> to never check)</span>';
