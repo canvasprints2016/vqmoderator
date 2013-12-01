@@ -485,7 +485,7 @@ class ModelToolVqmod extends Model {
 				$renamed = rename($old, $new);
 			}
 			if ($renamed) {
-				if ($time) touch($new, $time); // Set Original Modification time back
+				if ($time && is_writable($new)) touch($new, $time); // Set Original Modification time back
 				return true;
 			}
 		}
