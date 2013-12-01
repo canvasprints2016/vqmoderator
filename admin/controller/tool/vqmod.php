@@ -10,8 +10,12 @@ class ControllerToolVqmod extends Controller {
 		$this->document->addStyle('view/stylesheet/vqmod.css');
 		$this->document->addScript('view/javascript/codemirror.js');
 
+		// Set ftp_connection
+		$useFTP = $this->model_tool_vqmod->setFTP('hideErrors');
+		$warning = ($useFTP && $useFTP !== true) ? sprintf($this->language->get('error_ftp_settings'), $useFTP . '<br/>') . '<br/>' : '';
+
 		// Check if vQMod is installed
-		$warning = $this->model_tool_vqmod->checkInstall();
+		$warning .= $this->model_tool_vqmod->checkInstall();
 		$VQMODVER = $this->model_tool_vqmod->getVQModVersion();
 		// vQMod & vQModerator installed --> Check for OpenCart Local by UK Site Builder
 		if (!$warning && $VQMODVER && defined('SUBFOLDER') && defined('LOCALPATH')) {
@@ -113,7 +117,11 @@ class ControllerToolVqmod extends Controller {
 			}
 		}
 
-		if ($success) $this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
+		if ($success) {
+			// Close ftp_connection
+			$this->model_tool_vqmod->setFTP(false);
+			$this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
+		}
 
 		// Get online vQMod & vQModerator Versions
 		$vqm_lang = '';
@@ -146,9 +154,9 @@ class ControllerToolVqmod extends Controller {
 			$link = str_replace('&amp;', '&', $this->url->link('tool/vqmod/vqinstall', 'install=vqm&token=' . $this->session->data['token'], 'SSL'));
 			if ($vqm_ver > str_replace('.', '', $this->model_tool_vqmod->version)) {
 				if ($vqm_lang) $vqm_lang = ' &amp; ' . $vqm_lang;
-				$this->data['heading_title'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;"><a href="' . $link . '" class="vqmod-install vqtooltip" onclick="return false;">(' . $this->language->get('text_update_found') . $vqm_version . $vqm_lang . ')</small>';
+				$this->data['heading_title'] .= ' <small style="margin-left:8px;cursor:pointer;"><a href="' . $link . '" class="vqmod-install vqtooltip" onclick="return false;" style="color:red;">(' . $this->language->get('text_update_found') . $vqm_version . $vqm_lang . ')</a></small>';
 			} else {
-				$this->data['heading_title'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;"><a href="' . $link . '" class="vqmod-install" onclick="return false;">(' . $vqm_lang . ')</small>';
+				$this->data['heading_title'] .= ' <small style="margin-left:8px;cursor:pointer;"><a href="' . $link . '" class="vqmod-install" onclick="return false;" style="color:red;">(' . $vqm_lang . ')</a></small>';
 			}
 			$updated = false;
 		}
@@ -157,11 +165,13 @@ class ControllerToolVqmod extends Controller {
 		$this->data['column_version'] = $this->language->get('column_version');
 		$this->data['column_vqmver'] = $this->language->get('column_vqmver') . ' <small style="margin-left:8px;">(' . ($VQMODVER ? $VQMODVER : $this->language->get('text_not_installed')) . ')</small>';
 		if (!$warning && $vq_ver > (int)str_replace('.', '', $VQMODVER)) {
-			$this->data['column_vqmver'] .= ' <small style="margin-left:8px;color:red;cursor:pointer;"><a href="' . str_replace('&amp;', '&', $this->url->link('tool/vqmod/vqinstall', 'install=vq&token=' . $this->session->data['token'], 'SSL')) . '" class="vqmod-install" onclick="return false;">(' . $this->language->get('text_update_found') . $vq_version . ')</a></small>';
+			$this->data['column_vqmver'] .= ' <small style="margin-left:8px;cursor:pointer;"><a href="' . str_replace('&amp;', '&', $this->url->link('tool/vqmod/vqinstall', 'install=vq&token=' . $this->session->data['token'], 'SSL')) . '" class="vqmod-install" onclick="return false;" style="color:red;">(' . $this->language->get('text_update_found') . $vq_version . ')</a></small>';
 			$updated = false;
 		}
 		if (!$warning && isset($this->request->get['checkup']) && $updated) {
 			$this->session->data['success'] = (isset($this->session->data['success']) ? '<br/>' : '') . $this->language->get('text_no_updates');
+			// Close ftp_connection
+			$this->model_tool_vqmod->setFTP(false);
 			$this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
 		}
 		if ($warning && $warning !== true) $this->error['warning'] = $warning;
@@ -336,6 +346,8 @@ class ControllerToolVqmod extends Controller {
 			'common/header',
 			'common/footer'
 		);
+		// Close ftp_connection
+		$this->model_tool_vqmod->setFTP(false);
 
 		$this->response->setOutput($this->render());
 	}
@@ -360,6 +372,9 @@ class ControllerToolVqmod extends Controller {
 			if (!$this->validate()) {
 				$this->error['warning'] = $this->language->get('error_permission');
 			} else {
+				// Set ftp_connection
+				$useFTP = $this->model_tool_vqmod->setFTP();
+				$this->error['warning'] = ($useFTP && $useFTP !== true) ? sprintf($this->language->get('error_ftp_settings'), $useFTP) . "\n" : '';
 				if (isset($this->request->post['autosave_time'])) {
 					$this->data['autosave_time'] = $this->request->post['autosave_time'];
 					unset($this->request->post['autosave_time']);
@@ -370,8 +385,11 @@ class ControllerToolVqmod extends Controller {
 					// Check if the filename has changed (and remove old file if so)
 					if ($orig_file && substr($file, -4) == substr($orig_file, -4) && $file != $orig_file) $this->model_tool_vqmod->deleteFile($this->model_tool_vqmod->xml . $orig_file);
 					if ($this->request->post['generatexml']) {
+						// Close ftp_connection
+						$this->model_tool_vqmod->setFTP(false);
 						if ((int)$this->request->post['generatexml'] >= 2) {
-							echo 'SAVED';
+							// Add any FTP warnings to output
+							echo $this->error['warning'] . 'SAVED';
 							exit;
 						} else {
 							$this->session->data['success'] = sprintf($this->language->get('text_xml_success'), $file);
@@ -386,13 +404,16 @@ class ControllerToolVqmod extends Controller {
 					}
 				} else {
 					if ((int)$this->request->post['generatexml'] >= 2) {
-						echo $this->language->get('error_saving_xml');
+						// Add any FTP warnings to output
+						echo $this->error['warning'] . $this->language->get('error_saving_xml');
 						exit;
 					} else {
 						$file = (isset($this->request->get['file'])) ? $this->request->get['file'] : false;
-						$this->error['warning'] = $this->language->get('error_saving_xml');
+						$this->error['warning'] .= $this->language->get('error_saving_xml');
 					}
 				}
+				// Close ftp_connection
+				$this->model_tool_vqmod->setFTP(false);
 			}
 		}
 
@@ -546,6 +567,7 @@ class ControllerToolVqmod extends Controller {
 				$this->data['log_files'][] = $log_file;
 			} else {
 				$dirfiles = glob($log_file . '*.log');
+				if (!$dirfiles) $dirfiles = array();
 				foreach ($dirfiles as $path) $this->data['log_files'][basename($path)] = 'vQMod: ' . substr(basename($path),0,-4);
 			}
 		}
@@ -692,6 +714,7 @@ class ControllerToolVqmod extends Controller {
 			$this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
 		} else {
 			$vqmods = glob($this->session->data['vqm_xml'] . '*.xml*');
+			if (!$vqmods) $vqmods = array();
 
 			$zipped = tempnam('tmp', 'zip');
 
@@ -879,6 +902,7 @@ class ControllerToolVqmod extends Controller {
 			}
 			if (file_exists($tests) && is_dir($tests)) {
 				$dirfiles = glob($tests . '*');
+				if (!$dirfiles) $dirfiles = array();
 				foreach ($dirfiles as $path) {
 					if (is_dir($path) && $path != '../..' . $subfolder) {
 						$files = $path . '/' . $file;
@@ -904,9 +928,12 @@ class ControllerToolVqmod extends Controller {
 	public function takeover() {
 		$this->load->language('tool/vqmod');
 		$this->load->model('tool/vqmod');
+		// Set ftp_connection
+		$this->model_tool_vqmod->setFTP();
 		$root = filter_input(INPUT_SERVER, 'DOCUMENT_ROOT');
 		$json = '';
 		$versions = glob($root . '/*');
+		if (!$versions) $versions = array();
 		$splash = $this->model_tool_vqmod->vqmtrunk . 'oclocal/splash.png';
 		$splash = ($this->model_tool_vqmod->isRemoteFile($splash)) ? file_get_contents($splash) : false;
 		$index = $this->model_tool_vqmod->vqmtrunk . 'oclocal/index.php';
@@ -941,12 +968,16 @@ class ControllerToolVqmod extends Controller {
 			}
 		}
 		$this->session->data['success'] = $json;
+		// Close ftp_connection
+		$this->model_tool_vqmod->setFTP(false);
 		$this->redirect($this->url->link('tool/vqmod', 'token=' . $this->session->data['token'], 'SSL'));
 	}
 
 	public function vqinstall() {
 		$this->load->language('tool/vqmod');
 		$this->load->model('tool/vqmod');
+		// Set ftp_connection
+		$this->model_tool_vqmod->setFTP('hideErrors');
 		// (Re-)Load current vQMod version
 		if (class_exists('VQMod')) $this->model_tool_vqmod->getVQModConfig();
 		$install = (isset($this->request->get['install'])) ? $this->request->get['install'] : false;
@@ -959,12 +990,17 @@ class ControllerToolVqmod extends Controller {
 			} else {
 				if ($done) {
 					$json['error'] = $this->language->get('error_vqmod_write') . $done;
-					$user = exec('whoami');
-					if (!$user && function_exists('posix_getpwuid')) {
-						$user = posix_getpwuid(posix_geteuid());
-						$user = $user['name'];
+					// FTP support --> Check if FTP is available, and advise user to configure it.
+					if (!$this->config->get('config_ftp_status') && $this->config->get('config_ftp_status') !== null) {
+						$json['error'] .= '<br/>' . $this->language->get('error_ftp_enable');
+					} else {
+						$user = exec('whoami');
+						if (!$user && function_exists('posix_getpwuid')) {
+							$user = posix_getpwuid(posix_geteuid());
+							$user = $user['name'];
+						}
+						if ($user) $json['error'] .= sprintf($this->language->get('error_write_user'), $user);
 					}
-					if ($user) $json['error'] .= sprintf($this->language->get('error_write_user'), $user);
 				} else {
 					$json['error'] = $this->language->get('error_vqmod_server');
 				}
@@ -977,6 +1013,10 @@ class ControllerToolVqmod extends Controller {
 				$json['success'] = $this->language->get('success_update_vqmod');
 			} else {
 				$json['error'] = (isset($this->request->get['try'])) ? sprintf($this->language->get('error_install_vqmod1'), str_replace('&amp;', '&', $this->url->link('tool/vqmod/vqinstall', 'install=govq&token=' . $this->session->data['token'], 'SSL'))) : $this->language->get('error_install_vqmod2') . $done;
+				// FTP support --> Check if FTP is available, and advise user to configure it.
+				if (!isset($this->request->get['try']) && !$this->config->get('config_ftp_status') && $this->config->get('config_ftp_status') !== null) {
+					$json['error'] .= '<br/>' . $this->language->get('error_ftp_enable');
+				}
 			}
 		} elseif ($install == 'vqm') {
 			$done = $this->model_tool_vqmod->getVQModerator();
@@ -990,12 +1030,16 @@ class ControllerToolVqmod extends Controller {
 				$json['success'] = $languages . sprintf($this->language->get('success_download_vqmoder'), $this->url->link('tool/vqmod', 'installing=1&token=' . $this->session->data['token'], 'SSL'));
 			} elseif ($done) {
 				$json['error'] = $this->language->get('error_update_write') . $done;
-				$user = exec('whoami');
-				if (!$user && function_exists('posix_getpwuid')) {
-					$user = posix_getpwuid(posix_geteuid());
-					$user = $user['name'];
+				if (!$this->config->get('config_ftp_status') && $this->config->get('config_ftp_status') !== null) {
+					$json['error'] .= '<br/>' . $this->language->get('error_ftp_enable');
+				} else {
+					$user = exec('whoami');
+					if (!$user && function_exists('posix_getpwuid')) {
+						$user = posix_getpwuid(posix_geteuid());
+						$user = $user['name'];
+					}
+					if ($user) $json['error'] .= sprintf($this->language->get('error_write_user'), $user);
 				}
-				if ($user) $json['error'] .= sprintf($this->language->get('error_write_user'), $user);
 			} else {
 				$json['error'] = $this->language->get('error_update_server');
 			}
@@ -1015,6 +1059,8 @@ class ControllerToolVqmod extends Controller {
 		} else {
 			$json['error'] = $this->language->get('error_install_var');
 		}
+		// Close ftp_connection
+		$this->model_tool_vqmod->setFTP(false);
 
 		$this->response->setOutput(json_encode($json));
 	}
