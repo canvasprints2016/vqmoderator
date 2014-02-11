@@ -1,4 +1,4 @@
-#summary vQModerator main Wiki page.
+#summary Main page.
 
 = Introduction =
 
